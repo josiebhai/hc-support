@@ -54,7 +54,7 @@ The application features a professional hospital management theme with:
 
 - Node.js (v18 or higher)
 - npm or yarn
-- Supabase account (for database features)
+- Supabase account (for database features) - **Optional for demo mode**
 
 ### Installation
 
@@ -69,16 +69,39 @@ cd hc-support
 npm install
 ```
 
-3. Set up environment variables:
-```bash
-cp .env.example .env
-```
+3. **Choose your mode:**
 
-4. Configure your Supabase credentials in `.env`:
-```env
-VITE_SUPABASE_URL=your-project-url
-VITE_SUPABASE_ANON_KEY=your-anon-key
-```
+   **Option A: Demo Mode (No Supabase required)**
+   
+   The application includes a demo mode for testing the user management interface without setting up Supabase.
+   
+   Demo credentials:
+   - Super Admin: `admin@healthcare.com` (any password)
+   - Doctor: `doctor@healthcare.com` (any password)
+   - Nurse: `nurse@healthcare.com` (any password)
+   - Receptionist: `receptionist@healthcare.com` (any password)
+
+   Simply run:
+   ```bash
+   npm run dev
+   ```
+
+   **Option B: Full Supabase Integration**
+   
+   For production use with real database:
+   
+   a. Set up environment variables:
+   ```bash
+   cp .env.example .env
+   ```
+
+   b. Configure your Supabase credentials in `.env`:
+   ```env
+   VITE_SUPABASE_URL=your-project-url
+   VITE_SUPABASE_ANON_KEY=your-anon-key
+   ```
+
+   c. Follow the [Supabase Setup Guide](./SUPABASE_SETUP.md) to configure your database
 
 ### Development
 
