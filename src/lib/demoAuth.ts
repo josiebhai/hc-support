@@ -1,4 +1,7 @@
 // Demo/Mock authentication service for testing without Supabase
+// WARNING: This is for DEMO purposes only. Do NOT use in production.
+// Demo mode stores user data in localStorage which is not secure.
+// In production, use Supabase authentication with secure session management.
 import type { User } from '@/types/user'
 
 const DEMO_USERS: User[] = [
@@ -62,6 +65,8 @@ export const demoAuth = {
     }
 
     demoAuth.currentUser = user
+    // Note: Storing in localStorage is acceptable for demo mode only
+    // In production, Supabase handles secure session management
     localStorage.setItem('demo_user', JSON.stringify(user))
     return { user, error: null }
   },
@@ -117,6 +122,8 @@ export const demoAuth = {
     // Update current user if it's the same user
     if (demoAuth.currentUser?.id === userId) {
       demoAuth.currentUser = demoAuth.users[index]
+      // Note: Storing in localStorage is acceptable for demo mode only
+      // In production, Supabase handles secure session management
       localStorage.setItem('demo_user', JSON.stringify(demoAuth.currentUser))
     }
 

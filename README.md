@@ -75,6 +75,11 @@ npm install
    
    The application includes a demo mode for testing the user management interface without setting up Supabase.
    
+   **⚠️ WARNING: Demo mode is for development/testing ONLY. Do NOT use in production.**
+   - Uses localStorage for session storage (not secure)
+   - No actual database backend
+   - Data resets on page refresh
+   
    Demo credentials:
    - Super Admin: `admin@healthcare.com` (any password)
    - Doctor: `doctor@healthcare.com` (any password)
