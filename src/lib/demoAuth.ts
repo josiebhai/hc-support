@@ -52,7 +52,8 @@ export const demoAuth = {
   users: [...DEMO_USERS],
   currentUser: null as User | null,
   
-  signIn: async (email: string, password: string): Promise<{ user: User | null; error: Error | null }> => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  signIn: async (email: string, _password: string): Promise<{ user: User | null; error: Error | null }> => {
     // In demo mode, accept any password
     const user = DEMO_USERS.find(u => u.email === email)
     
