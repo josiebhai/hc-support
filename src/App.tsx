@@ -1,4 +1,5 @@
 import { AuthProvider, useAuth } from './contexts/AuthContext'
+import { ToastProvider } from './components/ui/toast'
 import { LoginPage } from './pages/LoginPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { UserManagementPage } from './pages/UserManagementPage'
@@ -55,7 +56,9 @@ function AppContent() {
 function App() {
   return (
     <AuthProvider>
-      <AppContent />
+      <ToastProvider>
+        <AppContent />
+      </ToastProvider>
     </AuthProvider>
   )
 }

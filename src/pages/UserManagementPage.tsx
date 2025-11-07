@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
+import { useToast } from '@/components/ui/toast'
 import type { User, UserRole, InviteUserData } from '@/types/user'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -20,9 +21,12 @@ import { UserPlus, Mail, Shield, Users, AlertCircle, CheckCircle, Trash2, Refres
 
 export function UserManagementPage() {
   const { user: currentUser } = useAuth()
+  const { showToast } = useToast()
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [showInviteDialog, setShowInviteDialog] = useState(false)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [userToDelete, setUserToDelete] = useState<string | null>(null)
   const [inviteData, setInviteData] = useState<InviteUserData>({
     email: '',
     role: 'doctor',
@@ -58,13 +62,20 @@ export function UserManagementPage() {
     setInviteSuccess(false)
 
     try {
-      // In a real implementation, this would call Supabase Auth Admin API
-      // For now, we'll simulate the invite
-      const { error } = await supabase.auth.admin.inviteUserByEmail(inviteData.email)
-
-      if (error) {
-        console.error('Invite error:', error)
-        throw error
+      // Note: In production, this should be handled through a server-side API
+      // because supabase.auth.admin requires a service role key
+      // For now, we'll use the Supabase client but this will only work with proper setup
+      try {
+        const { error } = await supabase.auth.admin.inviteUserByEmail(inviteData.email)
+        
+        if (error) {
+          console.error('Invite error:', error)
+          throw error
+        }
+      } catch (adminError) {
+        // If admin API fails, log the error but continue with profile creation
+        console.warn('Admin invite failed (expected in dev mode):', adminError)
+        showToast('info', 'User profile created. Email invitation requires Supabase service role key.')
       }
 
       // Create user profile with pending status
@@ -82,6 +93,7 @@ export function UserManagementPage() {
       if (profileError) throw profileError
 
       setInviteSuccess(true)
+      showToast('success', 'User invited successfully!')
       setTimeout(() => {
         setShowInviteDialog(false)
         setInviteData({ email: '', role: 'doctor' })
@@ -89,7 +101,9 @@ export function UserManagementPage() {
         loadUsers()
       }, 2000)
     } catch (error) {
-      setInviteError((error as Error).message || 'Failed to invite user')
+      const errorMessage = (error as Error).message || 'Failed to invite user'
+      setInviteError(errorMessage)
+      showToast('error', errorMessage)
     } finally {
       setInviteLoading(false)
     }
@@ -111,19 +125,29 @@ export function UserManagementPage() {
   }
 
   const handleDeleteUser = async (userId: string) => {
-    if (!confirm('Are you sure you want to delete this user?')) return
+    setUserToDelete(userId)
+    setShowDeleteDialog(true)
+  }
+
+  const confirmDeleteUser = async () => {
+    if (!userToDelete) return
 
     try {
       const { error } = await supabase
         .from('users')
         .delete()
-        .eq('id', userId)
+        .eq('id', userToDelete)
 
       if (error) throw error
 
+      showToast('success', 'User deleted successfully')
       loadUsers()
     } catch (error) {
+      showToast('error', 'Failed to delete user')
       console.error('Error deleting user:', error)
+    } finally {
+      setShowDeleteDialog(false)
+      setUserToDelete(null)
     }
   }
 
@@ -133,10 +157,10 @@ export function UserManagementPage() {
 
       if (error) throw error
 
-      alert('Password reset email sent successfully')
+      showToast('success', 'Password reset email sent successfully')
     } catch (err) {
       console.error('Password reset error:', err)
-      alert('Failed to send password reset email')
+      showToast('error', 'Failed to send password reset email')
     }
   }
 
@@ -237,7 +261,7 @@ export function UserManagementPage() {
                         <p className="text-sm text-neutral-600">{user.email}</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 ml-13">
+                    <div className="flex items-center gap-2 ml-12">
                       <Badge variant={getRoleBadgeColor(user.role)}>
                         {user.role.replace('_', ' ')}
                       </Badge>
@@ -372,6 +396,34 @@ export function UserManagementPage() {
               </DialogFooter>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertCircle className="w-5 h-5 text-danger-600" />
+              Delete User
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this user? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="ghost"
+              onClick={() => setShowDeleteDialog(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmDeleteUser}
+            >
+              Delete User
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
