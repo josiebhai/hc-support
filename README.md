@@ -1,6 +1,6 @@
 # Objective
 
-This project is used to manage the health records of the people visiting the hospital.
+We are building a digital ecosystem that connects healthcare transformation , Streamline patient care and influence compassion into every interaction.
 
 # User types
 
@@ -11,3 +11,8 @@ This project is used to manage the health records of the people visiting the hos
 **Nurses**- view patient medical chart, edit patient medical chart
 
 **Receptionist**-view patient medical chart, add /update/ delete patient profiles, no access to edit patient medical chart
+
+# Tech Stack
+
+Front End - React
+Database - Supabase
