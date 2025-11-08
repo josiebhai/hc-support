@@ -28,8 +28,12 @@ jobs:
       # Step 4: Build the React app
       - name: Build project
         run: npm run build
+        
+      # Step 5: Verify the React Build
+      - name: Verify build output
+        run: ls -al build/
 
-      # Step 5: Configure AWS credentials
+      # Step 6: Configure AWS credentials
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -37,6 +41,6 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      # Step 6: Deploy to S3
+      # Step 7: Deploy to S3
       - name: Deploy to S3
         run: aws s3 sync build/ s3://${{ secrets.BUCKET_NAME }} --delete
