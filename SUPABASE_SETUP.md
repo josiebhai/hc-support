@@ -58,6 +58,9 @@ CREATE POLICY "Users can update own profile" ON public.users
 CREATE INDEX IF NOT EXISTS idx_users_email ON public.users(email);
 CREATE INDEX IF NOT EXISTS idx_users_role ON public.users(role);
 CREATE INDEX IF NOT EXISTS idx_users_status ON public.users(status);
+
+-- Enable Realtime for users table (for real-time role updates)
+ALTER PUBLICATION supabase_realtime ADD TABLE public.users;
 ```
 
 ### 2. Create Trigger for Updated Timestamp

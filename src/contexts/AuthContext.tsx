@@ -46,6 +46,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // Real-time subscription to user profile changes
+  useEffect(() => {
+    if (!user?.id) return
+
+    // Subscribe to changes in the user's profile
+    const channel = supabase
+      .channel(`user-${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'users',
+          filter: `id=eq.${user.id}`,
+        },
+        (payload) => {
+          // Update user state when role or other fields change
+          setUser(payload.new as User)
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [user?.id])
+
   const loadUserProfile = async (userId: string) => {
     try {
       const { data, error } = await supabase

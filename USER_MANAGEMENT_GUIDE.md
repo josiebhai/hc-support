@@ -73,6 +73,19 @@ The HealthCare Support Patient Management System includes a comprehensive user m
 **User Actions:**
 - **Reset Password** - Send a password reset email to a user
 - **Delete User** - Permanently remove a user from the system (requires confirmation)
+- **Change Role** - Super Admin can change a user's role (Doctor, Nurse, Receptionist, Super Admin)
+
+**Real-Time Role Updates:**
+When a Super Admin changes a user's role, the change is reflected **immediately** without requiring the user to logout and login again. The system uses Supabase real-time subscriptions to automatically update the user's session with their new role and permissions.
+
+**How it works:**
+1. Super Admin changes a user's role
+2. The database is updated
+3. Real-time subscription detects the change
+4. User's session is automatically updated
+5. UI permissions refresh instantly
+
+This ensures seamless role transitions without disrupting the user's workflow.
 
 ### 3. Profile Settings
 
