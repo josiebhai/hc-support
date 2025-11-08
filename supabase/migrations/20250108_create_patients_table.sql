@@ -5,12 +5,12 @@ CREATE TABLE IF NOT EXISTS patients (
     full_name TEXT NOT NULL,
     gender TEXT NOT NULL CHECK (gender IN ('male', 'female', 'other')),
     date_of_birth DATE NOT NULL,
-    language_preference TEXT NOT NULL,
-    marital_status TEXT NOT NULL CHECK (marital_status IN ('single', 'married', 'divorced', 'widowed')),
-    aadhar_id TEXT NOT NULL,
+    language_preference TEXT,  -- Optional field
+    marital_status TEXT CHECK (marital_status IN ('single', 'married', 'divorced', 'widowed', '')),  -- Optional field
+    aadhar_id TEXT,  -- Optional field
     mobile_number TEXT NOT NULL,
-    village TEXT NOT NULL,
-    state TEXT NOT NULL,
+    village TEXT,  -- Optional field
+    state TEXT,  -- Optional field
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     created_by UUID REFERENCES auth.users(id)

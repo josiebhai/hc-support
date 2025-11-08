@@ -5,7 +5,7 @@ export interface Patient {
   gender: 'male' | 'female' | 'other'
   date_of_birth: string // ISO date format
   language_preference: string
-  marital_status: 'single' | 'married' | 'divorced' | 'widowed'
+  marital_status: 'single' | 'married' | 'divorced' | 'widowed' | ''
   aadhar_id: string // Indian Aadhar identification number
   mobile_number: string
   village: string
@@ -20,7 +20,7 @@ export interface CreatePatientData {
   gender: 'male' | 'female' | 'other'
   date_of_birth: string
   language_preference: string
-  marital_status: 'single' | 'married' | 'divorced' | 'widowed'
+  marital_status: 'single' | 'married' | 'divorced' | 'widowed' | ''
   aadhar_id: string
   mobile_number: string
   village: string

@@ -37,12 +37,12 @@ export function PatientsPage() {
     full_name: '',
     gender: 'male',
     date_of_birth: '',
-    language_preference: 'Hindi',
-    marital_status: 'single',
+    language_preference: '',
+    marital_status: '',
     aadhar_id: '',
     mobile_number: '',
     village: '',
-    state: 'Delhi',
+    state: '',
   })
 
   const userPermissions = user?.role ? rolePermissions[user.role] : null
@@ -128,12 +128,12 @@ export function PatientsPage() {
       full_name: '',
       gender: 'male',
       date_of_birth: '',
-      language_preference: 'Hindi',
-      marital_status: 'single',
+      language_preference: '',
+      marital_status: '',
       aadhar_id: '',
       mobile_number: '',
       village: '',
-      state: 'Delhi',
+      state: '',
     })
   }
 
@@ -324,14 +324,14 @@ export function PatientsPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="language_preference">
-                      Language Preference <span className="text-danger-600">*</span>
+                      Language Preference
                     </Label>
                     <Select
                       id="language_preference"
                       value={formData.language_preference}
                       onChange={(e) => handleInputChange('language_preference', e.target.value)}
-                      required
                     >
+                      <option value="">Select language (optional)</option>
                       {languages.map((lang) => (
                         <option key={lang} value={lang}>
                           {lang}
@@ -342,14 +342,14 @@ export function PatientsPage() {
 
                   <div className="space-y-2">
                     <Label htmlFor="marital_status">
-                      Marital Status <span className="text-danger-600">*</span>
+                      Marital Status
                     </Label>
                     <Select
                       id="marital_status"
                       value={formData.marital_status}
                       onChange={(e) => handleInputChange('marital_status', e.target.value as CreatePatientData['marital_status'])}
-                      required
                     >
+                      <option value="">Select status (optional)</option>
                       <option value="single">Single</option>
                       <option value="married">Married</option>
                       <option value="divorced">Divorced</option>
@@ -362,16 +362,15 @@ export function PatientsPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="aadhar_id">
-                      Aadhar ID <span className="text-danger-600">*</span>
+                      Aadhar ID
                     </Label>
                     <Input
                       id="aadhar_id"
                       value={formData.aadhar_id}
                       onChange={(e) => handleInputChange('aadhar_id', e.target.value)}
-                      placeholder="XXXX XXXX XXXX"
+                      placeholder="XXXX XXXX XXXX (optional)"
                       pattern="[0-9\s]{12,14}"
                       maxLength={14}
-                      required
                     />
                   </div>
 
@@ -395,27 +394,26 @@ export function PatientsPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="village">
-                      Village <span className="text-danger-600">*</span>
+                      Village
                     </Label>
                     <Input
                       id="village"
                       value={formData.village}
                       onChange={(e) => handleInputChange('village', e.target.value)}
-                      placeholder="Enter village name"
-                      required
+                      placeholder="Enter village name (optional)"
                     />
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="state">
-                      State <span className="text-danger-600">*</span>
+                      State
                     </Label>
                     <Select
                       id="state"
                       value={formData.state}
                       onChange={(e) => handleInputChange('state', e.target.value)}
-                      required
                     >
+                      <option value="">Select state (optional)</option>
                       {states.map((state) => (
                         <option key={state} value={state}>
                           {state}

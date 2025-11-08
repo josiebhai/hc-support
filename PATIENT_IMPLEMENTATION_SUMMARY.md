@@ -158,12 +158,12 @@ While not part of this PR, potential future improvements include:
 - **Full Name**: Required, text only
 - **Gender**: Required, must be one of: male, female, other
 - **Date of Birth**: Required, valid date
-- **Language Preference**: Required, from predefined list
-- **Marital Status**: Required, one of: single, married, divorced, widowed
-- **Aadhar ID**: Required, 12 digits, pattern: `[0-9\s]{12,14}`
+- **Language Preference**: Optional, from predefined list
+- **Marital Status**: Optional, one of: single, married, divorced, widowed
+- **Aadhar ID**: Optional, 12 digits, pattern: `[0-9\s]{12,14}`
 - **Mobile Number**: Required, 10-15 characters, pattern: `[\+]?[0-9\s]{10,15}`
-- **Village**: Required, text
-- **State**: Required, from predefined list of Indian states
+- **Village**: Optional, text
+- **State**: Optional, from predefined list of Indian states
 
 ## Known Limitations
 
