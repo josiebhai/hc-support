@@ -7,6 +7,9 @@ export interface PatientVisit {
   patient_id: string
   visit_date: string // ISO date format
   
+  // Treating Doctor
+  treating_doctor_name?: string
+  
   // Health Information (all optional)
   height_cm?: number | null
   weight_kg?: number | null
@@ -18,6 +21,10 @@ export interface PatientVisit {
   last_health_checkup_date?: string | null // ISO date format
   doctor_notes?: string
   
+  // Follow-up and Prescriptions (optional)
+  followup_notes?: string
+  prescriptions?: string
+  
   // Metadata
   created_at: string
   updated_at: string
@@ -28,6 +35,7 @@ export interface PatientVisit {
 export interface CreatePatientVisitData {
   patient_id: string
   visit_date?: string
+  treating_doctor_name?: string
   height_cm?: number | null
   weight_kg?: number | null
   blood_group?: BloodGroup
@@ -37,9 +45,12 @@ export interface CreatePatientVisitData {
   immunization_status?: string
   last_health_checkup_date?: string | null
   doctor_notes?: string
+  followup_notes?: string
+  prescriptions?: string
 }
 
 export interface UpdatePatientVisitData {
+  treating_doctor_name?: string
   height_cm?: number | null
   weight_kg?: number | null
   blood_group?: BloodGroup
@@ -49,6 +60,8 @@ export interface UpdatePatientVisitData {
   immunization_status?: string
   last_health_checkup_date?: string | null
   doctor_notes?: string
+  followup_notes?: string
+  prescriptions?: string
 }
 
 // Blood group options

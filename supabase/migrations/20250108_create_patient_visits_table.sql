@@ -4,6 +4,9 @@ CREATE TABLE IF NOT EXISTS patient_visits (
     patient_id UUID NOT NULL REFERENCES patients(id) ON DELETE CASCADE,
     visit_date TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     
+    -- Treating Doctor
+    treating_doctor_name TEXT, -- Name of the treating doctor (optional)
+    
     -- Health Information (all optional)
     height_cm DECIMAL(5, 2), -- Height in centimeters
     weight_kg DECIMAL(5, 2), -- Weight in kilograms
@@ -14,6 +17,10 @@ CREATE TABLE IF NOT EXISTS patient_visits (
     immunization_status TEXT, -- Free text field for immunization status
     last_health_checkup_date DATE, -- Last health checkup date
     doctor_notes TEXT, -- Free text field for doctor notes
+    
+    -- Follow-up and Prescriptions (optional)
+    followup_notes TEXT, -- Follow-up instructions and notes
+    prescriptions TEXT, -- Prescribed medications and instructions
     
     -- Metadata
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),

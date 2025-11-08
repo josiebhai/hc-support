@@ -43,6 +43,7 @@ export function PatientDetailPage({ patientId, onBack }: PatientDetailPageProps)
   const [formData, setFormData] = useState<CreatePatientVisitData>({
     patient_id: patientId,
     visit_date: new Date().toISOString(),
+    treating_doctor_name: '',
     height_cm: null,
     weight_kg: null,
     blood_group: '',
@@ -52,6 +53,8 @@ export function PatientDetailPage({ patientId, onBack }: PatientDetailPageProps)
     immunization_status: '',
     last_health_checkup_date: null,
     doctor_notes: '',
+    followup_notes: '',
+    prescriptions: '',
   })
 
   const userPermissions = user?.role ? rolePermissions[user.role] : null
@@ -145,6 +148,7 @@ export function PatientDetailPage({ patientId, onBack }: PatientDetailPageProps)
 
     try {
       const updateData = {
+        treating_doctor_name: formData.treating_doctor_name,
         height_cm: formData.height_cm,
         weight_kg: formData.weight_kg,
         blood_group: formData.blood_group,
@@ -154,6 +158,8 @@ export function PatientDetailPage({ patientId, onBack }: PatientDetailPageProps)
         immunization_status: formData.immunization_status,
         last_health_checkup_date: formData.last_health_checkup_date,
         doctor_notes: formData.doctor_notes,
+        followup_notes: formData.followup_notes,
+        prescriptions: formData.prescriptions,
         updated_by: user?.id,
       }
 
@@ -190,6 +196,9 @@ export function PatientDetailPage({ patientId, onBack }: PatientDetailPageProps)
       immunization_status: '',
       last_health_checkup_date: null,
       doctor_notes: '',
+      treating_doctor_name: '',
+      followup_notes: '',
+      prescriptions: '',
     })
   }
 
@@ -224,6 +233,7 @@ export function PatientDetailPage({ patientId, onBack }: PatientDetailPageProps)
     setFormData({
       patient_id: patientId,
       visit_date: visit.visit_date,
+      treating_doctor_name: visit.treating_doctor_name || '',
       height_cm: visit.height_cm,
       weight_kg: visit.weight_kg,
       blood_group: visit.blood_group || '',
@@ -233,6 +243,8 @@ export function PatientDetailPage({ patientId, onBack }: PatientDetailPageProps)
       immunization_status: visit.immunization_status || '',
       last_health_checkup_date: visit.last_health_checkup_date,
       doctor_notes: visit.doctor_notes || '',
+      followup_notes: visit.followup_notes || '',
+      prescriptions: visit.prescriptions || '',
     })
     setShowEditVisitDialog(true)
   }
@@ -367,6 +379,11 @@ export function PatientDetailPage({ patientId, onBack }: PatientDetailPageProps)
                         <Badge variant="outline">
                           {new Date(visit.visit_date).toLocaleTimeString()}
                         </Badge>
+                        {visit.treating_doctor_name && (
+                          <Badge variant="outline" className="bg-primary-50 text-primary-700">
+                            Dr. {visit.treating_doctor_name}
+                          </Badge>
+                        )}
                       </div>
                       {canEditMedicalChart && (
                         <Button 
@@ -446,6 +463,20 @@ export function PatientDetailPage({ patientId, onBack }: PatientDetailPageProps)
                         <p className="text-neutral-900 text-sm mt-1 whitespace-pre-wrap">{visit.doctor_notes}</p>
                       </div>
                     )}
+
+                    {visit.prescriptions && (
+                      <div className={`${visit.doctor_notes ? 'pt-3' : 'pt-3 border-t border-neutral-200'}`}>
+                        <span className="font-medium text-neutral-600 text-sm">Prescriptions:</span>
+                        <p className="text-neutral-900 text-sm mt-1 whitespace-pre-wrap">{visit.prescriptions}</p>
+                      </div>
+                    )}
+
+                    {visit.followup_notes && (
+                      <div className={`${visit.doctor_notes || visit.prescriptions ? 'pt-3' : 'pt-3 border-t border-neutral-200'}`}>
+                        <span className="font-medium text-neutral-600 text-sm">Follow-up Notes:</span>
+                        <p className="text-neutral-900 text-sm mt-1 whitespace-pre-wrap">{visit.followup_notes}</p>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -473,6 +504,17 @@ export function PatientDetailPage({ patientId, onBack }: PatientDetailPageProps)
                     type="datetime-local"
                     value={formData.visit_date ? new Date(formData.visit_date).toISOString().slice(0, 16) : ''}
                     onChange={(e) => handleInputChange('visit_date', e.target.value ? new Date(e.target.value).toISOString() : '')}
+                  />
+                </div>
+
+                {/* Treating Doctor */}
+                <div className="space-y-2">
+                  <Label htmlFor="treating_doctor_name">Treating Doctor Name</Label>
+                  <Input
+                    id="treating_doctor_name"
+                    value={formData.treating_doctor_name}
+                    onChange={(e) => handleInputChange('treating_doctor_name', e.target.value)}
+                    placeholder="e.g., Dr. Smith"
                   />
                 </div>
 
@@ -582,7 +624,7 @@ export function PatientDetailPage({ patientId, onBack }: PatientDetailPageProps)
                     />
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-2 mb-4">
                     <Label htmlFor="doctor_notes">Doctor Notes</Label>
                     <textarea
                       id="doctor_notes"
@@ -590,6 +632,28 @@ export function PatientDetailPage({ patientId, onBack }: PatientDetailPageProps)
                       onChange={(e) => handleInputChange('doctor_notes', e.target.value)}
                       placeholder="Add notes about this visit..."
                       className="w-full min-h-[120px] px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    />
+                  </div>
+
+                  <div className="space-y-2 mb-4">
+                    <Label htmlFor="prescriptions">Prescriptions</Label>
+                    <textarea
+                      id="prescriptions"
+                      value={formData.prescriptions}
+                      onChange={(e) => handleInputChange('prescriptions', e.target.value)}
+                      placeholder="List prescribed medications and instructions..."
+                      className="w-full min-h-[120px] px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="followup_notes">Follow-up Notes</Label>
+                    <textarea
+                      id="followup_notes"
+                      value={formData.followup_notes}
+                      onChange={(e) => handleInputChange('followup_notes', e.target.value)}
+                      placeholder="Add follow-up instructions and next steps..."
+                      className="w-full min-h-[100px] px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
                     />
                   </div>
                 </div>
@@ -632,6 +696,17 @@ export function PatientDetailPage({ patientId, onBack }: PatientDetailPageProps)
                   <p className="text-neutral-900 font-medium">
                     {formData.visit_date && new Date(formData.visit_date).toLocaleString()}
                   </p>
+                </div>
+
+                {/* Treating Doctor */}
+                <div className="space-y-2">
+                  <Label htmlFor="edit_treating_doctor_name">Treating Doctor Name</Label>
+                  <Input
+                    id="edit_treating_doctor_name"
+                    value={formData.treating_doctor_name}
+                    onChange={(e) => handleInputChange('treating_doctor_name', e.target.value)}
+                    placeholder="e.g., Dr. Smith"
+                  />
                 </div>
 
                 {/* Health Metrics Section - Same as Add Dialog */}
@@ -740,7 +815,7 @@ export function PatientDetailPage({ patientId, onBack }: PatientDetailPageProps)
                     />
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-2 mb-4">
                     <Label htmlFor="edit_doctor_notes">Doctor Notes</Label>
                     <textarea
                       id="edit_doctor_notes"
@@ -748,6 +823,28 @@ export function PatientDetailPage({ patientId, onBack }: PatientDetailPageProps)
                       onChange={(e) => handleInputChange('doctor_notes', e.target.value)}
                       placeholder="Add notes about this visit..."
                       className="w-full min-h-[120px] px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    />
+                  </div>
+
+                  <div className="space-y-2 mb-4">
+                    <Label htmlFor="edit_prescriptions">Prescriptions</Label>
+                    <textarea
+                      id="edit_prescriptions"
+                      value={formData.prescriptions}
+                      onChange={(e) => handleInputChange('prescriptions', e.target.value)}
+                      placeholder="List prescribed medications and instructions..."
+                      className="w-full min-h-[120px] px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="edit_followup_notes">Follow-up Notes</Label>
+                    <textarea
+                      id="edit_followup_notes"
+                      value={formData.followup_notes}
+                      onChange={(e) => handleInputChange('followup_notes', e.target.value)}
+                      placeholder="Add follow-up instructions and next steps..."
+                      className="w-full min-h-[100px] px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
                     />
                   </div>
                 </div>
