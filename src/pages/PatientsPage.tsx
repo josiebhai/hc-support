@@ -21,6 +21,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useToast } from '@/components/ui/toast'
 import type { Patient, CreatePatientData } from '@/types/patient'
 import { rolePermissions } from '@/types/user'
+import { PatientDetailPage } from './PatientDetailPage'
 
 // Import constants
 import { INDIAN_STATES as states, LANGUAGES as languages } from '@/types/patient'
@@ -33,6 +34,7 @@ export function PatientsPage() {
   const [showAddDialog, setShowAddDialog] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null)
   
   const [formData, setFormData] = useState<CreatePatientData>({
     full_name: '',
@@ -152,6 +154,16 @@ export function PatientsPage() {
     return gender.charAt(0).toUpperCase() + gender.slice(1)
   }
 
+  // If a patient is selected, show the detail page
+  if (selectedPatientId) {
+    return (
+      <PatientDetailPage 
+        patientId={selectedPatientId} 
+        onBack={() => setSelectedPatientId(null)} 
+      />
+    )
+  }
+
   if (loading) {
     return (
       <Layout>
@@ -255,7 +267,13 @@ export function PatientsPage() {
                         </div>
                       </div>
                     </div>
-                    <Button variant="ghost" size="sm">View Details</Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => setSelectedPatientId(patient.id)}
+                    >
+                      View Details
+                    </Button>
                   </div>
                 ))}
               </div>
