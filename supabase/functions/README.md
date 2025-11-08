@@ -30,6 +30,8 @@ Invites a new user to the system by email.
 }
 ```
 
+**Note:** This function uses UPSERT to handle cases where a database trigger (`on_auth_user_created`) may have already created a user profile with default values. The specified role will be applied regardless of whether the profile already exists.
+
 ### 2. reset-user-password
 Sends a password reset email to a user.
 

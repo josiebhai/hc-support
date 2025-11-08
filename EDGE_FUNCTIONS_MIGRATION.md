@@ -22,8 +22,9 @@ All admin SDK operations that previously required the service role key have been
 ### Edge Functions (Server-Side)
 1. **`supabase/functions/invite-user/index.ts`**
    - Invites users by email
-   - Creates user profile with role
+   - Creates/updates user profile with role (uses UPSERT to handle database trigger)
    - Uses service role key securely
+   - Handles cleanup if profile creation fails
 
 2. **`supabase/functions/reset-user-password/index.ts`**
    - Generates password reset link

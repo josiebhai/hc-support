@@ -84,24 +84,28 @@ serve(async (req) => {
       throw inviteError
     }
 
-    // Create user profile with pending status
+    // Create or update user profile with pending status
+    // Note: A database trigger might have already created a profile with default role
+    // so we use upsert to handle both cases
     const { error: profileCreateError } = await supabaseAdmin
       .from('users')
-      .insert({
+      .upsert({
         id: inviteData.user.id,
         email: email,
         role: role,
         status: 'pending',
         invited_by: user.id,
-        created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
+      }, {
+        onConflict: 'id'
       })
 
     if (profileCreateError) {
-      // If profile creation fails, we should clean up the auth user
-      // but for now we'll just throw the error
+      // If profile creation/update fails, we should clean up the auth user
       console.error('Profile creation error:', profileCreateError)
-      throw profileCreateError
+      // Try to delete the auth user to maintain consistency
+      await supabaseAdmin.auth.admin.deleteUser(inviteData.user.id)
+      throw new Error('Failed to create user profile: ' + profileCreateError.message)
     }
 
     return new Response(
