@@ -31,7 +31,7 @@ jobs:
         
       # Step 5: Verify the React Build
       - name: Verify build output
-        run: ls -al build/
+        run: ls -al dist/
 
       # Step 6: Configure AWS credentials
       - name: Configure AWS credentials
