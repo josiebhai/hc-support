@@ -1,7 +1,7 @@
 -- Create patients table for storing patient information
 CREATE TABLE IF NOT EXISTS patients (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    patient_id TEXT NOT NULL UNIQUE, -- Display ID like P001, P002
+    patient_id TEXT NOT NULL UNIQUE, -- Display ID like OP-0001, OP-0002
     full_name TEXT NOT NULL,
     gender TEXT NOT NULL CHECK (gender IN ('male', 'female', 'other')),
     date_of_birth DATE NOT NULL,

@@ -22,7 +22,7 @@ Successfully implemented a comprehensive patient profile creation feature for th
 
 ### 3. Database Schema (`supabase/migrations/20250108_create_patients_table.sql`)
 - Complete SQL migration for patients table
-- Auto-generating patient IDs (P001, P002, etc.)
+- Auto-generating patient IDs (OP-0001, OP-0002, etc.)
 - Row Level Security (RLS) policies
 - Database indexes for performance optimization
 - Automatic timestamp management
@@ -42,7 +42,7 @@ Successfully implemented a comprehensive patient profile creation feature for th
 
 All required fields from the issue have been implemented:
 
-1. ✅ **Patient ID**: Auto-generated in format P001, P002, etc.
+1. ✅ **Patient ID**: Auto-generated in format OP-0001, OP-0002, etc.
 2. ✅ **Full Name**: Text input with validation
 3. ✅ **Gender**: Dropdown (Male/Female/Other)
 4. ✅ **Date of Birth**: Date picker with validation

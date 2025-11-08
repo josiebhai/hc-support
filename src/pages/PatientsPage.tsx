@@ -79,12 +79,12 @@ export function PatientsPage() {
   }, [loadPatients])
 
   const generatePatientId = () => {
-    // Generate patient ID in format P001, P002, etc.
+    // Generate patient ID in format OP-0001, OP-0002, etc.
     const maxId = patients.reduce((max, patient) => {
-      const num = parseInt(patient.patient_id.replace('P', ''))
+      const num = parseInt(patient.patient_id.replace('OP-', ''))
       return num > max ? num : max
     }, 0)
-    return `P${String(maxId + 1).padStart(3, '0')}`
+    return `OP-${String(maxId + 1).padStart(4, '0')}`
   }
 
   const handleSubmit = async (e: React.FormEvent) => {

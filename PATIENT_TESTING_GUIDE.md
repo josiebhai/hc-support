@@ -52,7 +52,7 @@ Fill in the form with valid data:
 Click "Add Patient" and verify:
 - Success message appears
 - Dialog closes
-- Patient appears in the list with ID "P001"
+- Patient appears in the list with ID "OP-0001"
 
 #### Test Case 2: Form Validation
 
@@ -75,7 +75,7 @@ Add another patient with different data:
 - **State**: Uttar Pradesh
 
 Verify:
-- New patient gets ID "P002"
+- New patient gets ID "OP-0002"
 - Both patients appear in the list
 - Patient IDs are sequential
 
@@ -83,7 +83,7 @@ Verify:
 
 Test the search bar at the top:
 - Search by name: "John" → Should show John Doe
-- Search by patient ID: "P002" → Should show Jane Smith
+- Search by patient ID: "OP-0002" → Should show Jane Smith
 - Search by mobile: "98765" → Should show John Doe
 - Clear search → Should show all patients
 
@@ -137,7 +137,7 @@ Verify:
 - ✓ Success/error messages appear as toasts
 
 ### Functionality
-- ✓ Patient IDs auto-generate sequentially (P001, P002, etc.)
+- ✓ Patient IDs auto-generate sequentially (OP-0001, OP-0002, etc.)
 - ✓ All required fields validated
 - ✓ Search works across name, ID, and mobile
 - ✓ Permissions enforced correctly

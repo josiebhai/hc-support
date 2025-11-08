@@ -1,6 +1,6 @@
 export interface Patient {
   id: string
-  patient_id: string // Display ID like "P001", "P002"
+  patient_id: string // Display ID like "OP-0001", "OP-0002"
   full_name: string
   gender: 'male' | 'female' | 'other'
   date_of_birth: string // ISO date format
