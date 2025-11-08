@@ -33,20 +33,22 @@ function AppContent() {
     )
   }
 
+  // Check if user is on reset password page (special case - user has temporary session for password reset)
+  if (currentPath === '/reset-password') {
+    return <ResetPasswordPage />
+  }
+
   // Check if user needs to activate account
   const needsActivation = session && user && user.status === 'pending'
-  
+
   if (needsActivation && currentPath !== '/activate') {
     return <ActivateAccountPage />
   }
 
-  // If not logged in, show login page, forgot password page, or reset password page
+  // If not logged in, show login page or forgot password page
   if (!session) {
     if (currentPath === '/forgot-password') {
       return <ForgotPasswordPage />
-    }
-    if (currentPath === '/reset-password') {
-      return <ResetPasswordPage />
     }
     return <LoginPage />
   }
