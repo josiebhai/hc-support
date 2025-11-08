@@ -23,45 +23,48 @@ export function ActivateAccountPage() {
   const { updateUserProfile, session } = useAuth()
 
   useEffect(() => {
-    const verifyInviteToken = async () => {
-      // Check if we're coming from an invite link
+    const handleInvitationLink = async () => {
+      // Check if we're coming from an invite link with error in hash
       const hashParams = new URLSearchParams(window.location.hash.substring(1))
       const errorParam = hashParams.get('error')
       const errorDescription = hashParams.get('error_description')
+      const errorCode = hashParams.get('error_code')
       
       if (errorParam) {
-        setTokenError(errorDescription || 'Invalid or expired invitation link')
+        let message = errorDescription || 'Invalid or expired invitation link'
+        
+        // Provide more specific error messages
+        if (errorCode === 'otp_expired') {
+          message = 'The invitation link has expired. Please request a new invitation from your administrator.'
+        } else if (errorCode === 'access_denied') {
+          message = 'Access denied. The invitation link may be invalid or already used.'
+        }
+        
+        setTokenError(message)
         setVerifyingToken(false)
         return
       }
 
-      // Check if there's a token in the URL (from email link)
-      const urlParams = new URLSearchParams(window.location.search)
-      const token = urlParams.get('token')
-      const type = urlParams.get('type')
-
-      if (token && type === 'invite') {
-        try {
-          // Verify the token and create session
-          const { error } = await supabase.auth.verifyOtp({
-            token_hash: token,
-            type: 'invite',
-          })
-
-          if (error) {
-            setTokenError('Invalid or expired invitation link. Please contact your administrator.')
-            console.error('Token verification error:', error)
-          }
-        } catch (err) {
-          setTokenError('Failed to verify invitation. Please try again.')
-          console.error('Token verification exception:', err)
-        }
+      // Check for access_token in hash (successful Supabase authentication)
+      const accessToken = hashParams.get('access_token')
+      const refreshToken = hashParams.get('refresh_token')
+      
+      if (accessToken && refreshToken) {
+        // Supabase has already verified the invitation and created a session
+        // The AuthProvider should pick this up automatically via getSession()
+        // Give it a moment to process
+        await new Promise(resolve => setTimeout(resolve, 500))
+      } else if (!session) {
+        // No error, no token, and no session - might be a direct navigation
+        // or the session hasn't loaded yet
+        await new Promise(resolve => setTimeout(resolve, 500))
       }
       
       setVerifyingToken(false)
     }
 
-    verifyInviteToken()
+    handleInvitationLink()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {

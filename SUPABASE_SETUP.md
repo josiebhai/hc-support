@@ -112,18 +112,47 @@ CREATE TRIGGER on_auth_user_created
 1. Go to Authentication > Settings in your Supabase dashboard
 2. Enable Email provider
 3. Configure email templates for invitation and password reset
+4. **Important**: Set email link expiry appropriately
+   - Go to Authentication > Settings > Auth section
+   - Find "Email link expiry" setting
+   - Default is 3600 seconds (1 hour) - consider increasing
+   - Recommended: 86400 seconds (24 hours) or more
+   - This prevents "otp_expired" errors
 
-### 2. Email Templates (Optional but Recommended)
+### 2. Configure Redirect URLs
 
-You can customize the email templates in Authentication > Email Templates:
+**Critical for invitation links to work:**
+
+1. Go to Authentication > URL Configuration
+2. Set "Site URL" to your app's URL (e.g., `http://localhost:5173`)
+3. Add redirect URLs:
+   - Development: `http://localhost:5173/activate`
+   - Development wildcard: `http://localhost:5173/*`
+   - Production: `https://yourdomain.com/activate`
+   - Production wildcard: `https://yourdomain.com/*`
+4. Click "Save"
+
+**Note**: Without correct redirect URLs, invitation links will fail with "access_denied" error.
+
+### 3. Email Templates (Recommended)
+
+Customize the email templates in Authentication > Email Templates:
 
 **Invite User Template:**
 ```html
 <h2>You're invited to join HealthCare Support</h2>
 <p>You have been invited to join the HealthCare Support Patient Management System.</p>
+<p><strong>Important:</strong> This link expires in 24 hours.</p>
 <p>Click the link below to activate your account:</p>
 <p><a href="{{ .ConfirmationURL }}">Activate Account</a></p>
+<p>If the link doesn't work, copy and paste this URL into your browser:</p>
+<p>{{ .ConfirmationURL }}</p>
 ```
+
+**Important Notes:**
+- Use `{{ .ConfirmationURL }}` (with double braces and dot prefix)
+- Test the email delivery and link functionality
+- Advise users to click the link promptly to avoid expiration
 
 **Reset Password Template:**
 ```html
