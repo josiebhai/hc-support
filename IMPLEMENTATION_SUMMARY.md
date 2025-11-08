@@ -141,16 +141,30 @@ src/
 │       └── toast.tsx
 ├── lib/
 │   ├── supabase.ts                # Supabase client
-│   └── demoAuth.ts                # Demo mode auth
+│   ├── demoAuth.ts                # Demo mode auth
+│   └── edgeFunctions.ts           # Edge function helpers
 └── App.tsx                        # Routing & auth wrapper
+
+supabase/
+└── functions/                     # Edge Functions (server-side)
+    ├── invite-user/
+    │   └── index.ts               # Invite user with service role
+    ├── reset-user-password/
+    │   └── index.ts               # Reset password with service role
+    ├── delete-user/
+    │   └── index.ts               # Delete user with service role
+    ├── config.toml                # Supabase configuration
+    └── README.md                  # Edge functions documentation
 ```
 
 ### Key Technologies
 - **React 19** with TypeScript
 - **Supabase** for authentication and database
+- **Supabase Edge Functions** for secure admin operations
 - **Tailwind CSS** for styling
 - **Vite** for build tooling
 - **ESLint** for code quality
+- **Deno** runtime for edge functions
 
 ## Code Quality
 
@@ -170,6 +184,8 @@ All feedback addressed:
 - ✅ CodeQL scan completed
 - ✅ One alert (demo mode localStorage) - documented as acceptable
 - ✅ Production uses Supabase secure authentication
+- ✅ **Admin operations moved to Edge Functions with service role key**
+- ✅ **No service role key exposed in client code**
 - ✅ Row-level security policies defined
 - ✅ Password encryption via Supabase
 - ✅ Clear security warnings in documentation
@@ -241,7 +257,7 @@ Full instructions in `SUPABASE_SETUP.md`
 
 ## Files Modified/Created
 
-### Created (13 files)
+### Created (19 files)
 1. `src/types/user.ts`
 2. `src/contexts/AuthContext.tsx`
 3. `src/pages/LoginPage.tsx`
@@ -254,14 +270,21 @@ Full instructions in `SUPABASE_SETUP.md`
 10. `src/components/ui/dialog.tsx`
 11. `src/components/ui/toast.tsx`
 12. `src/lib/demoAuth.ts`
-13. `SUPABASE_SETUP.md`
-14. `USER_MANAGEMENT_GUIDE.md`
-15. `IMPLEMENTATION_SUMMARY.md` (this file)
+13. `src/lib/edgeFunctions.ts`
+14. `supabase/functions/invite-user/index.ts`
+15. `supabase/functions/reset-user-password/index.ts`
+16. `supabase/functions/delete-user/index.ts`
+17. `supabase/functions/README.md`
+18. `supabase/config.toml`
+19. `SUPABASE_SETUP.md`
+20. `USER_MANAGEMENT_GUIDE.md`
+21. `IMPLEMENTATION_SUMMARY.md` (this file)
 
-### Modified (3 files)
+### Modified (4 files)
 1. `src/App.tsx` - Added routing and authentication
 2. `src/components/Layout.tsx` - Integrated with auth context
-3. `README.md` - Added demo mode documentation
+3. `src/pages/UserManagementPage.tsx` - Updated to use edge functions
+4. `README.md` - Added demo mode documentation
 
 ## Summary
 

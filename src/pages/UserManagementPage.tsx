@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { useToast } from '@/components/ui/toast'
+import { inviteUser, resetUserPassword, deleteUser as deleteUserEdgeFunction } from '@/lib/edgeFunctions'
 import type { User, UserRole, InviteUserData } from '@/types/user'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -62,35 +63,16 @@ export function UserManagementPage() {
     setInviteSuccess(false)
 
     try {
-      // Note: In production, this should be handled through a server-side API
-      // because supabase.auth.admin requires a service role key
-      // For now, we'll use the Supabase client but this will only work with proper setup
-      try {
-        const { error } = await supabase.auth.admin.inviteUserByEmail(inviteData.email)
-        
-        if (error) {
-          console.error('Invite error:', error)
-          throw error
-        }
-      } catch (adminError) {
-        // If admin API fails, log the error but continue with profile creation
-        console.warn('Admin invite failed (expected in dev mode):', adminError)
-        showToast('info', 'User profile created. Email invitation requires Supabase service role key.')
+      // Call edge function to invite user
+      // This uses the service role key on the server side
+      const result = await inviteUser({
+        email: inviteData.email,
+        role: inviteData.role,
+      })
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to invite user')
       }
-
-      // Create user profile with pending status
-      const { error: profileError } = await supabase
-        .from('users')
-        .insert({
-          email: inviteData.email,
-          role: inviteData.role,
-          status: 'pending',
-          invited_by: currentUser?.id,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-
-      if (profileError) throw profileError
 
       setInviteSuccess(true)
       showToast('success', 'User invited successfully!')
@@ -133,17 +115,17 @@ export function UserManagementPage() {
     if (!userToDelete) return
 
     try {
-      const { error } = await supabase
-        .from('users')
-        .delete()
-        .eq('id', userToDelete)
+      // Call edge function to delete user
+      const result = await deleteUserEdgeFunction(userToDelete)
 
-      if (error) throw error
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to delete user')
+      }
 
       showToast('success', 'User deleted successfully')
       loadUsers()
     } catch (error) {
-      showToast('error', 'Failed to delete user')
+      showToast('error', (error as Error).message || 'Failed to delete user')
       console.error('Error deleting user:', error)
     } finally {
       setShowDeleteDialog(false)
@@ -153,14 +135,17 @@ export function UserManagementPage() {
 
   const handleResetPassword = async (email: string) => {
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email)
+      // Call edge function to reset password
+      const result = await resetUserPassword(email)
 
-      if (error) throw error
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to send password reset email')
+      }
 
       showToast('success', 'Password reset email sent successfully')
     } catch (err) {
       console.error('Password reset error:', err)
-      showToast('error', 'Failed to send password reset email')
+      showToast('error', (err as Error).message || 'Failed to send password reset email')
     }
   }
 

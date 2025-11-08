@@ -156,6 +156,46 @@ VITE_SUPABASE_ANON_KEY=your-anon-key
 
 You can find these values in your Supabase project settings under API.
 
+## Edge Functions Deployment
+
+The application uses Supabase Edge Functions for secure admin operations (invite users, reset passwords, delete users). These functions run server-side with the service role key.
+
+### Prerequisites
+1. Install Supabase CLI: `npm install -g supabase`
+2. Link your project: `supabase link --project-ref your-project-ref`
+
+### Deploy Functions
+
+Deploy all edge functions to your Supabase project:
+
+```bash
+# Deploy all functions
+supabase functions deploy invite-user
+supabase functions deploy reset-user-password
+supabase functions deploy delete-user
+```
+
+Or deploy all at once:
+```bash
+supabase functions deploy
+```
+
+### Verify Deployment
+
+Check that functions are deployed:
+```bash
+supabase functions list
+```
+
+You should see:
+- `invite-user`
+- `reset-user-password`
+- `delete-user`
+
+**Note:** Edge functions automatically have access to `SUPABASE_SERVICE_ROLE_KEY` in the deployment environment. You don't need to set this manually.
+
+For detailed information about edge functions, see `supabase/functions/README.md`.
+
 ## Testing the Setup
 
 1. Start the development server: `npm run dev`
@@ -176,8 +216,9 @@ You can find these values in your Supabase project settings under API.
 
 ### Cannot invite users
 - Make sure you're logged in as a super admin
+- Verify edge functions are deployed: `supabase functions list`
 - Check the browser console for any error messages
-- Verify that the Supabase Admin API is accessible (may require service role key for production)
+- Ensure edge functions have been deployed to your Supabase project
 
 ## Security Notes
 
