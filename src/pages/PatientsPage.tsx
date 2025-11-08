@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
+import { DatePicker } from '@/components/ui/datepicker'
 import {
   Dialog,
   DialogContent,
@@ -289,7 +290,7 @@ export function PatientsPage() {
                 </div>
 
                 {/* Gender and DOB */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="gender">
                       Gender <span className="text-danger-600">*</span>
@@ -306,18 +307,13 @@ export function PatientsPage() {
                     </Select>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="date_of_birth">
-                      Date of Birth <span className="text-danger-600">*</span>
-                    </Label>
-                    <Input
-                      id="date_of_birth"
-                      type="date"
-                      value={formData.date_of_birth}
-                      onChange={(e) => handleInputChange('date_of_birth', e.target.value)}
-                      required
-                    />
-                  </div>
+                  <DatePicker
+                    id="date_of_birth"
+                    value={formData.date_of_birth}
+                    onChange={(value) => handleInputChange('date_of_birth', value)}
+                    label="Date of Birth"
+                    required
+                  />
                 </div>
 
                 {/* Language and Marital Status */}
