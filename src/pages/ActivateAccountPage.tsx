@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import type { ActivateAccountData } from '@/types/user'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -17,7 +18,51 @@ export function ActivateAccountPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
-  const { updateUserProfile } = useAuth()
+  const [verifyingToken, setVerifyingToken] = useState(true)
+  const [tokenError, setTokenError] = useState('')
+  const { updateUserProfile, session } = useAuth()
+
+  useEffect(() => {
+    const verifyInviteToken = async () => {
+      // Check if we're coming from an invite link
+      const hashParams = new URLSearchParams(window.location.hash.substring(1))
+      const errorParam = hashParams.get('error')
+      const errorDescription = hashParams.get('error_description')
+      
+      if (errorParam) {
+        setTokenError(errorDescription || 'Invalid or expired invitation link')
+        setVerifyingToken(false)
+        return
+      }
+
+      // Check if there's a token in the URL (from email link)
+      const urlParams = new URLSearchParams(window.location.search)
+      const token = urlParams.get('token')
+      const type = urlParams.get('type')
+
+      if (token && type === 'invite') {
+        try {
+          // Verify the token and create session
+          const { error } = await supabase.auth.verifyOtp({
+            token_hash: token,
+            type: 'invite',
+          })
+
+          if (error) {
+            setTokenError('Invalid or expired invitation link. Please contact your administrator.')
+            console.error('Token verification error:', error)
+          }
+        } catch (err) {
+          setTokenError('Failed to verify invitation. Please try again.')
+          console.error('Token verification exception:', err)
+        }
+      }
+      
+      setVerifyingToken(false)
+    }
+
+    verifyInviteToken()
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -39,21 +84,96 @@ export function ActivateAccountPage() {
     }
 
     try {
-      const { error } = await updateUserProfile({
+      // Update the user's password
+      const { error: passwordError } = await supabase.auth.updateUser({
+        password: formData.password,
+      })
+
+      if (passwordError) throw passwordError
+
+      // Update user profile
+      const { error: profileError } = await updateUserProfile({
         full_name: formData.full_name,
         phone: formData.phone,
         status: 'active',
         activated_at: new Date().toISOString(),
       })
 
-      if (error) throw error
+      if (profileError) throw profileError
 
       setSuccess(true)
-    } catch (error) {
-      setError((error as Error).message)
+    } catch (err) {
+      setError((err as Error).message || 'Failed to activate account')
     } finally {
       setLoading(false)
     }
+  }
+
+  if (verifyingToken) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-primary-100 p-4">
+        <div className="w-full max-w-md">
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex flex-col items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mb-4"></div>
+                <p className="text-neutral-600">Verifying invitation...</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    )
+  }
+
+  if (tokenError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-primary-100 p-4">
+        <div className="w-full max-w-md">
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex flex-col items-center justify-center py-8">
+                <AlertCircle className="w-16 h-16 text-danger-600 mb-4" />
+                <h2 className="text-2xl font-bold font-display text-neutral-900 mb-2">
+                  Invitation Error
+                </h2>
+                <p className="text-neutral-600 text-center mb-6">
+                  {tokenError}
+                </p>
+                <Button onClick={() => window.location.href = '/'}>
+                  Go to Login
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    )
+  }
+
+  if (!session) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-primary-100 p-4">
+        <div className="w-full max-w-md">
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex flex-col items-center justify-center py-8">
+                <AlertCircle className="w-16 h-16 text-warning-600 mb-4" />
+                <h2 className="text-2xl font-bold font-display text-neutral-900 mb-2">
+                  Session Required
+                </h2>
+                <p className="text-neutral-600 text-center mb-6">
+                  Please use the invitation link from your email to activate your account.
+                </p>
+                <Button onClick={() => window.location.href = '/'}>
+                  Go to Login
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    )
   }
 
   if (success) {
