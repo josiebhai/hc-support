@@ -79,6 +79,7 @@ const navItems: NavItem[] = [
 
 export function Sidebar() {
   const { user } = useAuth()
+  const currentPath = window.location.pathname
 
   const filteredNavItems = navItems.filter(item => {
     if (item.adminOnly) {
@@ -96,13 +97,14 @@ export function Sidebar() {
       <nav className="p-4 space-y-2">
         {filteredNavItems.map((item) => {
           const Icon = item.icon
+          const isActive = currentPath === item.path
           return (
             <button
               key={item.label}
               onClick={() => handleNavClick(item.path)}
               className={cn(
                 "w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors text-left",
-                item.active
+                isActive
                   ? "bg-primary-50 text-primary-700 font-medium"
                   : "text-neutral-600 hover:bg-neutral-50"
               )}

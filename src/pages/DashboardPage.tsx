@@ -173,7 +173,11 @@ export function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="grid gap-3">
-                <Button className="w-full justify-start" variant="outline">
+                <Button 
+                  className="w-full justify-start" 
+                  variant="outline"
+                  onClick={() => window.location.href = '/patients'}
+                >
                   <Users className="w-4 h-4 mr-2" />
                   Add New Patient
                 </Button>
