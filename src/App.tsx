@@ -3,6 +3,7 @@ import { ToastProvider } from './components/ui/toast'
 import { LoginPage } from './pages/LoginPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { UserManagementPage } from './pages/UserManagementPage'
+import { PatientsPage } from './pages/PatientsPage'
 import { ActivateAccountPage } from './pages/ActivateAccountPage'
 import { ProfilePage } from './pages/ProfilePage'
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage'
@@ -57,6 +58,8 @@ function AppContent() {
   switch (currentPath) {
     case '/users':
       return <UserManagementPage />
+    case '/patients':
+      return <PatientsPage />
     case '/activate':
       return <ActivateAccountPage />
     case '/profile':
