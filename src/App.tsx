@@ -4,6 +4,8 @@ import { LoginPage } from './pages/LoginPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { UserManagementPage } from './pages/UserManagementPage'
 import { ActivateAccountPage } from './pages/ActivateAccountPage'
+import { ProfilePage } from './pages/ProfilePage'
+import { ForgotPasswordPage } from './pages/ForgotPasswordPage'
 import { useState, useEffect } from 'react'
 
 function AppContent() {
@@ -37,8 +39,11 @@ function AppContent() {
     return <ActivateAccountPage />
   }
 
-  // If not logged in, show login page
+  // If not logged in, show login page or forgot password page
   if (!session) {
+    if (currentPath === '/forgot-password') {
+      return <ForgotPasswordPage />
+    }
     return <LoginPage />
   }
 
@@ -48,6 +53,8 @@ function AppContent() {
       return <UserManagementPage />
     case '/activate':
       return <ActivateAccountPage />
+    case '/profile':
+      return <ProfilePage />
     default:
       return <DashboardPage />
   }

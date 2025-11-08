@@ -1,4 +1,4 @@
-import { Activity, Users, Calendar, FileText, Settings, LogOut, Shield } from 'lucide-react'
+import { Activity, Users, Calendar, FileText, Settings, LogOut, Shield, User as UserIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/contexts/AuthContext'
 import { Button } from './ui/button'
@@ -73,6 +73,7 @@ const navItems: NavItem[] = [
   { icon: Calendar, label: 'Appointments', path: '/appointments', active: false },
   { icon: FileText, label: 'Medical Records', path: '/records', active: false },
   { icon: Shield, label: 'User Management', path: '/users', active: false, adminOnly: true },
+  { icon: UserIcon, label: 'Profile', path: '/profile', active: false },
   { icon: Settings, label: 'Settings', path: '/settings', active: false },
 ]
 
