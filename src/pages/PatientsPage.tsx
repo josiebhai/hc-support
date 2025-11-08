@@ -24,12 +24,13 @@ import { rolePermissions } from '@/types/user'
 import { PatientDetailPage } from './PatientDetailPage'
 
 // Import constants
-import { INDIAN_STATES as states, LANGUAGES as languages } from '@/types/patient'
+import { INDIAN_STATES as states, LANGUAGES as languages, BLOOD_GROUPS } from '@/types/patient'
 
 export function PatientsPage() {
   const { user } = useAuth()
   const { showToast } = useToast()
   const [patients, setPatients] = useState<Patient[]>([])
+  const [patientVisits, setPatientVisits] = useState<Record<string, { followup_date?: string | null }>>({})
   const [loading, setLoading] = useState(true)
   const [showAddDialog, setShowAddDialog] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
@@ -46,6 +47,7 @@ export function PatientsPage() {
     mobile_number: '',
     village: '',
     state: '',
+    blood_group: '',
   })
 
   const userPermissions = user?.role ? rolePermissions[user.role] : null
@@ -68,6 +70,28 @@ export function PatientsPage() {
         }
       } else {
         setPatients(data as Patient[] || [])
+        
+        // Load latest visit data for each patient to get follow-up dates
+        if (data && data.length > 0) {
+          const { data: visitsData, error: visitsError } = await supabase
+            .from('patient_visits')
+            .select('patient_id, followup_date, visit_date')
+            .in('patient_id', data.map((p: Patient) => p.id))
+            .order('visit_date', { ascending: false })
+          
+          if (!visitsError && visitsData) {
+            // Get the most recent visit for each patient
+            const latestVisits: Record<string, { followup_date?: string | null }> = {}
+            visitsData.forEach((visit: any) => {
+              if (!latestVisits[visit.patient_id]) {
+                latestVisits[visit.patient_id] = {
+                  followup_date: visit.followup_date
+                }
+              }
+            })
+            setPatientVisits(latestVisits)
+          }
+        }
       }
     } catch (error) {
       console.error('Error loading patients:', error)
@@ -137,6 +161,7 @@ export function PatientsPage() {
       mobile_number: '',
       village: '',
       state: '',
+      blood_group: '',
     })
   }
 
@@ -249,6 +274,11 @@ export function PatientsPage() {
                         <Badge variant="outline" className="text-xs">
                           {getGenderBadge(patient.gender)}
                         </Badge>
+                        {patient.blood_group && (
+                          <Badge variant="outline" className="text-xs bg-red-50 text-red-700 border-red-200">
+                            {patient.blood_group}
+                          </Badge>
+                        )}
                       </div>
                       <div className="grid grid-cols-2 gap-4 text-sm text-neutral-600">
                         <div className="flex items-center space-x-2">
@@ -265,6 +295,11 @@ export function PatientsPage() {
                         <div>
                           <span className="font-medium">Language:</span> {patient.language_preference}
                         </div>
+                        {patientVisits[patient.id]?.followup_date && (
+                          <div className="col-span-2">
+                            <span className="font-medium text-primary-600">Next Follow-up:</span> {new Date(patientVisits[patient.id].followup_date!).toLocaleDateString()}
+                          </div>
+                        )}
                       </div>
                     </div>
                     <Button 
@@ -370,6 +405,25 @@ export function PatientsPage() {
                       <option value="widowed">Widowed</option>
                     </Select>
                   </div>
+                </div>
+
+                {/* Blood Group */}
+                <div className="space-y-2">
+                  <Label htmlFor="blood_group">
+                    Blood Group
+                  </Label>
+                  <Select
+                    id="blood_group"
+                    value={formData.blood_group}
+                    onChange={(e) => handleInputChange('blood_group', e.target.value)}
+                  >
+                    <option value="">Select blood group (optional)</option>
+                    {BLOOD_GROUPS.map((bg) => (
+                      <option key={bg} value={bg}>
+                        {bg}
+                      </option>
+                    ))}
+                  </Select>
                 </div>
 
                 {/* Aadhar ID and Mobile */}

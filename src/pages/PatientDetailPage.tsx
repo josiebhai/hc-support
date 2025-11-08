@@ -4,7 +4,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Select } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { DatePicker } from '@/components/ui/datepicker'
 import {
@@ -20,8 +19,8 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { useToast } from '@/components/ui/toast'
 import type { Patient } from '@/types/patient'
-import type { PatientVisit, CreatePatientVisitData, ChronicCondition, BloodGroup } from '@/types/patientVisit'
-import { BLOOD_GROUPS, CHRONIC_CONDITIONS } from '@/types/patientVisit'
+import type { PatientVisit, CreatePatientVisitData, ChronicCondition } from '@/types/patientVisit'
+import { CHRONIC_CONDITIONS } from '@/types/patientVisit'
 import { rolePermissions } from '@/types/user'
 
 interface PatientDetailPageProps {
@@ -46,13 +45,13 @@ export function PatientDetailPage({ patientId, onBack }: PatientDetailPageProps)
     treating_doctor_name: '',
     height_cm: null,
     weight_kg: null,
-    blood_group: '',
     known_allergies: '',
     chronic_conditions: [],
     current_medications: '',
     immunization_status: '',
     last_health_checkup_date: null,
     doctor_notes: '',
+    followup_date: null,
     followup_notes: '',
     prescriptions: '',
   })
@@ -151,13 +150,13 @@ export function PatientDetailPage({ patientId, onBack }: PatientDetailPageProps)
         treating_doctor_name: formData.treating_doctor_name,
         height_cm: formData.height_cm,
         weight_kg: formData.weight_kg,
-        blood_group: formData.blood_group,
         known_allergies: formData.known_allergies,
         chronic_conditions: formData.chronic_conditions,
         current_medications: formData.current_medications,
         immunization_status: formData.immunization_status,
         last_health_checkup_date: formData.last_health_checkup_date,
         doctor_notes: formData.doctor_notes,
+        followup_date: formData.followup_date,
         followup_notes: formData.followup_notes,
         prescriptions: formData.prescriptions,
         updated_by: user?.id,
@@ -189,7 +188,6 @@ export function PatientDetailPage({ patientId, onBack }: PatientDetailPageProps)
       visit_date: new Date().toISOString(),
       height_cm: null,
       weight_kg: null,
-      blood_group: '',
       known_allergies: '',
       chronic_conditions: [],
       current_medications: '',
@@ -197,12 +195,13 @@ export function PatientDetailPage({ patientId, onBack }: PatientDetailPageProps)
       last_health_checkup_date: null,
       doctor_notes: '',
       treating_doctor_name: '',
+      followup_date: null,
       followup_notes: '',
       prescriptions: '',
     })
   }
 
-  const handleInputChange = (field: keyof CreatePatientVisitData, value: string | number | null | ChronicCondition[] | BloodGroup) => {
+  const handleInputChange = (field: keyof CreatePatientVisitData, value: string | number | null | ChronicCondition[]) => {
     setFormData(prev => ({ ...prev, [field]: value }))
   }
 
@@ -236,13 +235,13 @@ export function PatientDetailPage({ patientId, onBack }: PatientDetailPageProps)
       treating_doctor_name: visit.treating_doctor_name || '',
       height_cm: visit.height_cm,
       weight_kg: visit.weight_kg,
-      blood_group: visit.blood_group || '',
       known_allergies: visit.known_allergies || '',
       chronic_conditions: visit.chronic_conditions || [],
       current_medications: visit.current_medications || '',
       immunization_status: visit.immunization_status || '',
       last_health_checkup_date: visit.last_health_checkup_date,
       doctor_notes: visit.doctor_notes || '',
+      followup_date: visit.followup_date,
       followup_notes: visit.followup_notes || '',
       prescriptions: visit.prescriptions || '',
     })
@@ -409,16 +408,16 @@ export function PatientDetailPage({ patientId, onBack }: PatientDetailPageProps)
                           <p className="text-neutral-900">{visit.weight_kg} kg</p>
                         </div>
                       )}
-                      {visit.blood_group && (
-                        <div>
-                          <span className="font-medium text-neutral-600">Blood Group:</span>
-                          <p className="text-neutral-900">{visit.blood_group}</p>
-                        </div>
-                      )}
                       {visit.last_health_checkup_date && (
                         <div>
                           <span className="font-medium text-neutral-600">Last Checkup:</span>
                           <p className="text-neutral-900">{new Date(visit.last_health_checkup_date).toLocaleDateString()}</p>
+                        </div>
+                      )}
+                      {visit.followup_date && (
+                        <div>
+                          <span className="font-medium text-neutral-600">Follow-up Date:</span>
+                          <p className="text-neutral-900">{new Date(visit.followup_date).toLocaleDateString()}</p>
                         </div>
                       )}
                     </div>
@@ -549,22 +548,6 @@ export function PatientDetailPage({ patientId, onBack }: PatientDetailPageProps)
                   </div>
 
                   <div className="space-y-2 mb-4">
-                    <Label htmlFor="blood_group">Blood Group</Label>
-                    <Select
-                      id="blood_group"
-                      value={formData.blood_group}
-                      onChange={(e) => handleInputChange('blood_group', e.target.value as BloodGroup)}
-                    >
-                      <option value="">Select blood group (optional)</option>
-                      {BLOOD_GROUPS.filter(bg => bg !== '').map((bg) => (
-                        <option key={bg} value={bg}>
-                          {bg}
-                        </option>
-                      ))}
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2 mb-4">
                     <Label>Chronic Conditions</Label>
                     <div className="flex flex-wrap gap-2">
                       {CHRONIC_CONDITIONS.map((condition) => (
@@ -643,6 +626,15 @@ export function PatientDetailPage({ patientId, onBack }: PatientDetailPageProps)
                       onChange={(e) => handleInputChange('prescriptions', e.target.value)}
                       placeholder="List prescribed medications and instructions..."
                       className="w-full min-h-[120px] px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    />
+                  </div>
+
+                  <div className="space-y-2 mb-4">
+                    <DatePicker
+                      id="followup_date"
+                      value={formData.followup_date || ''}
+                      onChange={(value) => handleInputChange('followup_date', value)}
+                      label="Follow-up Date"
                     />
                   </div>
 
@@ -740,22 +732,6 @@ export function PatientDetailPage({ patientId, onBack }: PatientDetailPageProps)
                   </div>
 
                   <div className="space-y-2 mb-4">
-                    <Label htmlFor="edit_blood_group">Blood Group</Label>
-                    <Select
-                      id="edit_blood_group"
-                      value={formData.blood_group}
-                      onChange={(e) => handleInputChange('blood_group', e.target.value as BloodGroup)}
-                    >
-                      <option value="">Select blood group (optional)</option>
-                      {BLOOD_GROUPS.filter(bg => bg !== '').map((bg) => (
-                        <option key={bg} value={bg}>
-                          {bg}
-                        </option>
-                      ))}
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2 mb-4">
                     <Label>Chronic Conditions</Label>
                     <div className="flex flex-wrap gap-2">
                       {CHRONIC_CONDITIONS.map((condition) => (
@@ -834,6 +810,15 @@ export function PatientDetailPage({ patientId, onBack }: PatientDetailPageProps)
                       onChange={(e) => handleInputChange('prescriptions', e.target.value)}
                       placeholder="List prescribed medications and instructions..."
                       className="w-full min-h-[120px] px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    />
+                  </div>
+
+                  <div className="space-y-2 mb-4">
+                    <DatePicker
+                      id="edit_followup_date"
+                      value={formData.followup_date || ''}
+                      onChange={(value) => handleInputChange('followup_date', value)}
+                      label="Follow-up Date"
                     />
                   </div>
 

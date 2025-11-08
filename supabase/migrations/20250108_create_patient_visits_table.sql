@@ -10,7 +10,6 @@ CREATE TABLE IF NOT EXISTS patient_visits (
     -- Health Information (all optional)
     height_cm DECIMAL(5, 2), -- Height in centimeters
     weight_kg DECIMAL(5, 2), -- Weight in kilograms
-    blood_group TEXT CHECK (blood_group IN ('A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-', '')),
     known_allergies TEXT, -- Free text field for allergies
     chronic_conditions TEXT[], -- Array of chronic conditions
     current_medications TEXT, -- Free text field for medications
@@ -19,6 +18,7 @@ CREATE TABLE IF NOT EXISTS patient_visits (
     doctor_notes TEXT, -- Free text field for doctor notes
     
     -- Follow-up and Prescriptions (optional)
+    followup_date DATE, -- Date for follow-up appointment
     followup_notes TEXT, -- Follow-up instructions and notes
     prescriptions TEXT, -- Prescribed medications and instructions
     

@@ -1,7 +1,5 @@
 export type ChronicCondition = 'Diabetes' | 'Hypertension' | 'Asthma' | 'Tuberculosis' | 'None'
 
-export type BloodGroup = 'A+' | 'A-' | 'B+' | 'B-' | 'AB+' | 'AB-' | 'O+' | 'O-' | ''
-
 export interface PatientVisit {
   id: string
   patient_id: string
@@ -13,7 +11,6 @@ export interface PatientVisit {
   // Health Information (all optional)
   height_cm?: number | null
   weight_kg?: number | null
-  blood_group?: BloodGroup
   known_allergies?: string
   chronic_conditions?: ChronicCondition[]
   current_medications?: string
@@ -22,6 +19,7 @@ export interface PatientVisit {
   doctor_notes?: string
   
   // Follow-up and Prescriptions (optional)
+  followup_date?: string | null // ISO date format for follow-up appointment
   followup_notes?: string
   prescriptions?: string
   
@@ -38,13 +36,13 @@ export interface CreatePatientVisitData {
   treating_doctor_name?: string
   height_cm?: number | null
   weight_kg?: number | null
-  blood_group?: BloodGroup
   known_allergies?: string
   chronic_conditions?: ChronicCondition[]
   current_medications?: string
   immunization_status?: string
   last_health_checkup_date?: string | null
   doctor_notes?: string
+  followup_date?: string | null
   followup_notes?: string
   prescriptions?: string
 }
@@ -53,19 +51,16 @@ export interface UpdatePatientVisitData {
   treating_doctor_name?: string
   height_cm?: number | null
   weight_kg?: number | null
-  blood_group?: BloodGroup
   known_allergies?: string
   chronic_conditions?: ChronicCondition[]
   current_medications?: string
   immunization_status?: string
   last_health_checkup_date?: string | null
   doctor_notes?: string
+  followup_date?: string | null
   followup_notes?: string
   prescriptions?: string
 }
-
-// Blood group options
-export const BLOOD_GROUPS: BloodGroup[] = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-', '']
 
 // Chronic condition options
 export const CHRONIC_CONDITIONS: ChronicCondition[] = [

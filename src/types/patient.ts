@@ -10,6 +10,7 @@ export interface Patient {
   mobile_number: string
   village: string
   state: string
+  blood_group?: string // Blood group (optional)
   created_at: string
   updated_at: string
   created_by?: string
@@ -25,6 +26,7 @@ export interface CreatePatientData {
   mobile_number: string
   village: string
   state: string
+  blood_group?: string // Blood group (optional)
 }
 
 // Indian states for dropdown
@@ -86,3 +88,7 @@ export const LANGUAGES = [
   'Sanskrit',
   'Other',
 ]
+
+// Blood group options
+export const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']
+
