@@ -82,7 +82,7 @@ export function PatientsPage() {
           if (!visitsError && visitsData) {
             // Get the most recent visit for each patient
             const latestVisits: Record<string, { followup_date?: string | null }> = {}
-            visitsData.forEach((visit: any) => {
+            visitsData.forEach((visit: { patient_id: string; followup_date?: string | null }) => {
               if (!latestVisits[visit.patient_id]) {
                 latestVisits[visit.patient_id] = {
                   followup_date: visit.followup_date

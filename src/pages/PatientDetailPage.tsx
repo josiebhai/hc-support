@@ -14,7 +14,20 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { ArrowLeft, Plus, Calendar, User, FileText } from 'lucide-react'
+import { 
+  ArrowLeft, 
+  Plus, 
+  Calendar, 
+  User, 
+  FileText, 
+  Activity, 
+  Pill, 
+  Stethoscope,
+  AlertCircle,
+  CalendarClock,
+  ChevronDown,
+  ChevronUp
+} from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { useToast } from '@/components/ui/toast'
@@ -38,6 +51,8 @@ export function PatientDetailPage({ patientId, onBack }: PatientDetailPageProps)
   const [showEditVisitDialog, setShowEditVisitDialog] = useState(false)
   const [selectedVisit, setSelectedVisit] = useState<PatientVisit | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [activeTab, setActiveTab] = useState<'basic' | 'health' | 'notes'>('basic')
+  const [expandedVisits, setExpandedVisits] = useState<Set<string>>(new Set())
   
   const [formData, setFormData] = useState<CreatePatientVisitData>({
     patient_id: patientId,
@@ -229,6 +244,7 @@ export function PatientDetailPage({ patientId, onBack }: PatientDetailPageProps)
 
   const openEditDialog = (visit: PatientVisit) => {
     setSelectedVisit(visit)
+    setActiveTab('basic') // Reset to basic tab when opening edit dialog
     setFormData({
       patient_id: patientId,
       visit_date: visit.visit_date,
@@ -246,6 +262,29 @@ export function PatientDetailPage({ patientId, onBack }: PatientDetailPageProps)
       prescriptions: visit.prescriptions || '',
     })
     setShowEditVisitDialog(true)
+  }
+
+  const toggleVisitExpansion = (visitId: string) => {
+    setExpandedVisits(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(visitId)) {
+        newSet.delete(visitId)
+      } else {
+        newSet.add(visitId)
+      }
+      return newSet
+    })
+  }
+
+  const calculateAge = (dateOfBirth: string) => {
+    const today = new Date()
+    const birthDate = new Date(dateOfBirth)
+    let age = today.getFullYear() - birthDate.getFullYear()
+    const monthDiff = today.getMonth() - birthDate.getMonth()
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--
+    }
+    return age
   }
 
   if (loading) {
@@ -301,13 +340,25 @@ export function PatientDetailPage({ patientId, onBack }: PatientDetailPageProps)
         {/* Patient Information Card */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center">
-              <User className="w-5 h-5 mr-2" />
-              Patient Information
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center">
+                <User className="w-5 h-5 mr-2" />
+                Patient Information
+              </CardTitle>
+              <div className="flex items-center space-x-2">
+                {patient.blood_group && (
+                  <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
+                    Blood: {patient.blood_group}
+                  </Badge>
+                )}
+                <Badge variant="secondary">
+                  Age: {calculateAge(patient.date_of_birth)} years
+                </Badge>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
               <div>
                 <span className="font-medium text-neutral-600">Gender:</span>
                 <p className="text-neutral-900">{patient.gender.charAt(0).toUpperCase() + patient.gender.slice(1)}</p>
@@ -365,119 +416,215 @@ export function PatientDetailPage({ patientId, onBack }: PatientDetailPageProps)
               </div>
             ) : (
               <div className="space-y-4">
-                {visits.map((visit) => (
-                  <div
-                    key={visit.id}
-                    className="p-4 rounded-lg bg-neutral-50 hover:bg-neutral-100 transition-colors"
-                  >
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center space-x-2">
-                        <Badge variant="secondary">
-                          {new Date(visit.visit_date).toLocaleDateString()}
-                        </Badge>
-                        <Badge variant="outline">
-                          {new Date(visit.visit_date).toLocaleTimeString()}
-                        </Badge>
-                        {visit.treating_doctor_name && (
-                          <Badge variant="outline" className="bg-primary-50 text-primary-700">
-                            Dr. {visit.treating_doctor_name}
-                          </Badge>
-                        )}
-                      </div>
-                      {canEditMedicalChart && (
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          onClick={() => openEditDialog(visit)}
-                        >
-                          Edit
-                        </Button>
-                      )}
-                    </div>
-
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mb-3">
-                      {visit.height_cm && (
-                        <div>
-                          <span className="font-medium text-neutral-600">Height:</span>
-                          <p className="text-neutral-900">{visit.height_cm} cm</p>
-                        </div>
-                      )}
-                      {visit.weight_kg && (
-                        <div>
-                          <span className="font-medium text-neutral-600">Weight:</span>
-                          <p className="text-neutral-900">{visit.weight_kg} kg</p>
-                        </div>
-                      )}
-                      {visit.last_health_checkup_date && (
-                        <div>
-                          <span className="font-medium text-neutral-600">Last Checkup:</span>
-                          <p className="text-neutral-900">{new Date(visit.last_health_checkup_date).toLocaleDateString()}</p>
-                        </div>
-                      )}
-                      {visit.followup_date && (
-                        <div>
-                          <span className="font-medium text-neutral-600">Follow-up Date:</span>
-                          <p className="text-neutral-900">{new Date(visit.followup_date).toLocaleDateString()}</p>
-                        </div>
-                      )}
-                    </div>
-
-                    {visit.chronic_conditions && visit.chronic_conditions.length > 0 && (
-                      <div className="mb-3">
-                        <span className="font-medium text-neutral-600 text-sm">Chronic Conditions:</span>
-                        <div className="flex flex-wrap gap-2 mt-1">
-                          {visit.chronic_conditions.map((condition) => (
-                            <Badge key={condition} variant="outline" className="text-xs">
-                              {condition}
+                {visits.map((visit) => {
+                  const isExpanded = expandedVisits.has(visit.id)
+                  const hasHealthData = visit.height_cm || visit.weight_kg || visit.chronic_conditions?.length || visit.known_allergies
+                  const hasMedications = visit.current_medications || visit.prescriptions || visit.immunization_status
+                  const hasNotes = visit.doctor_notes || visit.followup_notes
+                  
+                  return (
+                    <Card key={visit.id} className="overflow-hidden border-l-4 border-l-primary-400">
+                      {/* Visit Header - Always Visible */}
+                      <div className="p-4 bg-gradient-to-r from-primary-50 to-white">
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex items-center space-x-2 flex-wrap gap-y-1">
+                            <Badge variant="secondary" className="font-semibold">
+                              {new Date(visit.visit_date).toLocaleDateString('en-US', { 
+                                weekday: 'short', 
+                                year: 'numeric', 
+                                month: 'short', 
+                                day: 'numeric' 
+                              })}
                             </Badge>
-                          ))}
+                            <Badge variant="outline">
+                              {new Date(visit.visit_date).toLocaleTimeString('en-US', { 
+                                hour: '2-digit', 
+                                minute: '2-digit' 
+                              })}
+                            </Badge>
+                            {visit.treating_doctor_name && (
+                              <Badge variant="outline" className="bg-primary-50 text-primary-700 border-primary-200">
+                                <Stethoscope className="w-3 h-3 mr-1" />
+                                Dr. {visit.treating_doctor_name}
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            {canEditMedicalChart && (
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                onClick={() => openEditDialog(visit)}
+                                className="text-primary-600 hover:text-primary-700"
+                              >
+                                Edit
+                              </Button>
+                            )}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => toggleVisitExpansion(visit.id)}
+                            >
+                              {isExpanded ? (
+                                <ChevronUp className="w-4 h-4" />
+                              ) : (
+                                <ChevronDown className="w-4 h-4" />
+                              )}
+                            </Button>
+                          </div>
+                        </div>
+
+                        {/* Quick Summary - Always Visible */}
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                          {visit.height_cm && visit.weight_kg && (
+                            <div className="flex items-center space-x-2">
+                              <Activity className="w-4 h-4 text-primary-600" />
+                              <span className="text-neutral-700">
+                                {visit.height_cm}cm / {visit.weight_kg}kg
+                              </span>
+                            </div>
+                          )}
+                          {visit.followup_date && (
+                            <div className="flex items-center space-x-2">
+                              <CalendarClock className="w-4 h-4 text-orange-600" />
+                              <span className="text-neutral-700">
+                                Follow-up: {new Date(visit.followup_date).toLocaleDateString()}
+                              </span>
+                            </div>
+                          )}
+                          {visit.known_allergies && (
+                            <div className="flex items-center space-x-2">
+                              <AlertCircle className="w-4 h-4 text-red-600" />
+                              <span className="text-red-700 font-medium">Allergies</span>
+                            </div>
+                          )}
+                          {visit.prescriptions && (
+                            <div className="flex items-center space-x-2">
+                              <Pill className="w-4 h-4 text-green-600" />
+                              <span className="text-neutral-700">Prescriptions</span>
+                            </div>
+                          )}
                         </div>
                       </div>
-                    )}
 
-                    {visit.known_allergies && (
-                      <div className="mb-3">
-                        <span className="font-medium text-neutral-600 text-sm">Allergies:</span>
-                        <p className="text-neutral-900 text-sm mt-1">{visit.known_allergies}</p>
-                      </div>
-                    )}
+                      {/* Detailed Information - Collapsible */}
+                      {isExpanded && (
+                        <div className="p-4 space-y-4 bg-white">
+                          {/* Health Metrics Section */}
+                          {hasHealthData && (
+                            <div className="border-t pt-4">
+                              <h4 className="flex items-center text-sm font-semibold text-neutral-700 mb-3">
+                                <Activity className="w-4 h-4 mr-2 text-primary-600" />
+                                Health Information
+                              </h4>
+                              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                                {visit.height_cm && (
+                                  <div className="bg-neutral-50 p-3 rounded-md">
+                                    <span className="text-neutral-600 text-xs">Height</span>
+                                    <p className="text-neutral-900 font-semibold">{visit.height_cm} cm</p>
+                                  </div>
+                                )}
+                                {visit.weight_kg && (
+                                  <div className="bg-neutral-50 p-3 rounded-md">
+                                    <span className="text-neutral-600 text-xs">Weight</span>
+                                    <p className="text-neutral-900 font-semibold">{visit.weight_kg} kg</p>
+                                  </div>
+                                )}
+                                {visit.last_health_checkup_date && (
+                                  <div className="bg-neutral-50 p-3 rounded-md">
+                                    <span className="text-neutral-600 text-xs">Last Checkup</span>
+                                    <p className="text-neutral-900 font-semibold">
+                                      {new Date(visit.last_health_checkup_date).toLocaleDateString()}
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
+                              
+                              {visit.chronic_conditions && visit.chronic_conditions.length > 0 && (
+                                <div className="mt-3">
+                                  <span className="text-neutral-600 text-xs">Chronic Conditions</span>
+                                  <div className="flex flex-wrap gap-2 mt-2">
+                                    {visit.chronic_conditions.map((condition) => (
+                                      <Badge key={condition} variant="outline" className="text-xs">
+                                        {condition}
+                                      </Badge>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
 
-                    {visit.current_medications && (
-                      <div className="mb-3">
-                        <span className="font-medium text-neutral-600 text-sm">Current Medications:</span>
-                        <p className="text-neutral-900 text-sm mt-1">{visit.current_medications}</p>
-                      </div>
-                    )}
+                              {visit.known_allergies && (
+                                <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-md">
+                                  <div className="flex items-center space-x-2 mb-1">
+                                    <AlertCircle className="w-4 h-4 text-red-600" />
+                                    <span className="text-red-700 font-semibold text-xs">Allergies</span>
+                                  </div>
+                                  <p className="text-red-900 text-sm">{visit.known_allergies}</p>
+                                </div>
+                              )}
+                            </div>
+                          )}
 
-                    {visit.immunization_status && (
-                      <div className="mb-3">
-                        <span className="font-medium text-neutral-600 text-sm">Immunization Status:</span>
-                        <p className="text-neutral-900 text-sm mt-1">{visit.immunization_status}</p>
-                      </div>
-                    )}
+                          {/* Medications Section */}
+                          {hasMedications && (
+                            <div className="border-t pt-4">
+                              <h4 className="flex items-center text-sm font-semibold text-neutral-700 mb-3">
+                                <Pill className="w-4 h-4 mr-2 text-green-600" />
+                                Medications & Immunization
+                              </h4>
+                              {visit.current_medications && (
+                                <div className="mb-3 p-3 bg-green-50 rounded-md">
+                                  <span className="text-green-700 font-medium text-xs">Current Medications</span>
+                                  <p className="text-neutral-900 text-sm mt-1 whitespace-pre-wrap">{visit.current_medications}</p>
+                                </div>
+                              )}
+                              {visit.prescriptions && (
+                                <div className="mb-3 p-3 bg-blue-50 rounded-md">
+                                  <span className="text-blue-700 font-medium text-xs">Prescriptions</span>
+                                  <p className="text-neutral-900 text-sm mt-1 whitespace-pre-wrap">{visit.prescriptions}</p>
+                                </div>
+                              )}
+                              {visit.immunization_status && (
+                                <div className="p-3 bg-purple-50 rounded-md">
+                                  <span className="text-purple-700 font-medium text-xs">Immunization Status</span>
+                                  <p className="text-neutral-900 text-sm mt-1">{visit.immunization_status}</p>
+                                </div>
+                              )}
+                            </div>
+                          )}
 
-                    {visit.doctor_notes && (
-                      <div className="pt-3 border-t border-neutral-200">
-                        <span className="font-medium text-neutral-600 text-sm">Doctor Notes:</span>
-                        <p className="text-neutral-900 text-sm mt-1 whitespace-pre-wrap">{visit.doctor_notes}</p>
-                      </div>
-                    )}
-
-                    {visit.prescriptions && (
-                      <div className={`${visit.doctor_notes ? 'pt-3' : 'pt-3 border-t border-neutral-200'}`}>
-                        <span className="font-medium text-neutral-600 text-sm">Prescriptions:</span>
-                        <p className="text-neutral-900 text-sm mt-1 whitespace-pre-wrap">{visit.prescriptions}</p>
-                      </div>
-                    )}
-
-                    {visit.followup_notes && (
-                      <div className={`${visit.doctor_notes || visit.prescriptions ? 'pt-3' : 'pt-3 border-t border-neutral-200'}`}>
-                        <span className="font-medium text-neutral-600 text-sm">Follow-up Notes:</span>
-                        <p className="text-neutral-900 text-sm mt-1 whitespace-pre-wrap">{visit.followup_notes}</p>
-                      </div>
-                    )}
-                  </div>
-                ))}
+                          {/* Notes Section */}
+                          {hasNotes && (
+                            <div className="border-t pt-4">
+                              <h4 className="flex items-center text-sm font-semibold text-neutral-700 mb-3">
+                                <FileText className="w-4 h-4 mr-2 text-blue-600" />
+                                Clinical Notes
+                              </h4>
+                              {visit.doctor_notes && (
+                                <div className="mb-3 p-3 bg-neutral-50 rounded-md border border-neutral-200">
+                                  <span className="text-neutral-600 font-medium text-xs">Doctor Notes</span>
+                                  <p className="text-neutral-900 text-sm mt-1 whitespace-pre-wrap">{visit.doctor_notes}</p>
+                                </div>
+                              )}
+                              {visit.followup_notes && (
+                                <div className="p-3 bg-orange-50 rounded-md border border-orange-200">
+                                  <span className="text-orange-700 font-medium text-xs">Follow-up Instructions</span>
+                                  <p className="text-neutral-900 text-sm mt-1 whitespace-pre-wrap">{visit.followup_notes}</p>
+                                  {visit.followup_date && (
+                                    <div className="mt-2 flex items-center space-x-2 text-xs text-orange-600">
+                                      <CalendarClock className="w-3 h-3" />
+                                      <span>Next appointment: {new Date(visit.followup_date).toLocaleDateString()}</span>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </Card>
+                  )
+                })}
               </div>
             )}
           </CardContent>
@@ -485,7 +632,7 @@ export function PatientDetailPage({ patientId, onBack }: PatientDetailPageProps)
 
         {/* Add Visit Dialog */}
         <Dialog open={showAddVisitDialog} onOpenChange={setShowAddVisitDialog}>
-          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
             <DialogHeader>
               <DialogTitle>Add New Visit</DialogTitle>
               <DialogDescription>
@@ -493,170 +640,239 @@ export function PatientDetailPage({ patientId, onBack }: PatientDetailPageProps)
               </DialogDescription>
             </DialogHeader>
 
-            <form onSubmit={handleSubmit}>
-              <div className="space-y-4 py-4">
-                {/* Visit Date */}
-                <div className="space-y-2">
-                  <Label htmlFor="visit_date">Visit Date and Time</Label>
-                  <Input
-                    id="visit_date"
-                    type="datetime-local"
-                    value={formData.visit_date ? new Date(formData.visit_date).toISOString().slice(0, 16) : ''}
-                    onChange={(e) => handleInputChange('visit_date', e.target.value ? new Date(e.target.value).toISOString() : '')}
-                  />
-                </div>
-
-                {/* Treating Doctor */}
-                <div className="space-y-2">
-                  <Label htmlFor="treating_doctor_name">Treating Doctor Name</Label>
-                  <Input
-                    id="treating_doctor_name"
-                    value={formData.treating_doctor_name}
-                    onChange={(e) => handleInputChange('treating_doctor_name', e.target.value)}
-                    placeholder="e.g., Dr. Smith"
-                  />
-                </div>
-
-                {/* Health Metrics Section */}
-                <div className="pt-4 border-t border-neutral-200">
-                  <h3 className="text-lg font-semibold mb-4">Health Information</h3>
-                  
-                  <div className="grid grid-cols-2 gap-4 mb-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="height_cm">Height (cm)</Label>
-                      <Input
-                        id="height_cm"
-                        type="number"
-                        step="0.01"
-                        value={formData.height_cm || ''}
-                        onChange={(e) => handleInputChange('height_cm', e.target.value ? parseFloat(e.target.value) : null)}
-                        placeholder="e.g., 170.5"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="weight_kg">Weight (kg)</Label>
-                      <Input
-                        id="weight_kg"
-                        type="number"
-                        step="0.01"
-                        value={formData.weight_kg || ''}
-                        onChange={(e) => handleInputChange('weight_kg', e.target.value ? parseFloat(e.target.value) : null)}
-                        placeholder="e.g., 70.5"
-                      />
-                    </div>
+            <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
+              {/* Tabs */}
+              <div className="flex border-b border-neutral-200 mb-4">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('basic')}
+                  className={`px-4 py-2 text-sm font-medium transition-colors ${
+                    activeTab === 'basic'
+                      ? 'border-b-2 border-primary-600 text-primary-600'
+                      : 'text-neutral-600 hover:text-neutral-900'
+                  }`}
+                >
+                  <div className="flex items-center space-x-2">
+                    <Calendar className="w-4 h-4" />
+                    <span>Basic Info</span>
                   </div>
-
-                  <div className="space-y-2 mb-4">
-                    <Label>Chronic Conditions</Label>
-                    <div className="flex flex-wrap gap-2">
-                      {CHRONIC_CONDITIONS.map((condition) => (
-                        <label
-                          key={condition}
-                          className="flex items-center space-x-2 px-3 py-2 rounded-md border border-neutral-300 cursor-pointer hover:bg-neutral-50"
-                        >
-                          <input
-                            type="checkbox"
-                            checked={formData.chronic_conditions?.includes(condition) || false}
-                            onChange={() => handleChronicConditionChange(condition)}
-                            className="rounded"
-                          />
-                          <span className="text-sm">{condition}</span>
-                        </label>
-                      ))}
-                    </div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('health')}
+                  className={`px-4 py-2 text-sm font-medium transition-colors ${
+                    activeTab === 'health'
+                      ? 'border-b-2 border-primary-600 text-primary-600'
+                      : 'text-neutral-600 hover:text-neutral-900'
+                  }`}
+                >
+                  <div className="flex items-center space-x-2">
+                    <Activity className="w-4 h-4" />
+                    <span>Health & Medications</span>
                   </div>
-
-                  <div className="space-y-2 mb-4">
-                    <Label htmlFor="known_allergies">Known Allergies</Label>
-                    <Input
-                      id="known_allergies"
-                      value={formData.known_allergies}
-                      onChange={(e) => handleInputChange('known_allergies', e.target.value)}
-                      placeholder="e.g., Penicillin, Peanuts"
-                    />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('notes')}
+                  className={`px-4 py-2 text-sm font-medium transition-colors ${
+                    activeTab === 'notes'
+                      ? 'border-b-2 border-primary-600 text-primary-600'
+                      : 'text-neutral-600 hover:text-neutral-900'
+                  }`}
+                >
+                  <div className="flex items-center space-x-2">
+                    <FileText className="w-4 h-4" />
+                    <span>Notes & Follow-up</span>
                   </div>
-
-                  <div className="space-y-2 mb-4">
-                    <Label htmlFor="current_medications">Current Medications</Label>
-                    <textarea
-                      id="current_medications"
-                      value={formData.current_medications}
-                      onChange={(e) => handleInputChange('current_medications', e.target.value)}
-                      placeholder="List current medications..."
-                      className="w-full min-h-[80px] px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-                    />
-                  </div>
-
-                  <div className="space-y-2 mb-4">
-                    <Label htmlFor="immunization_status">Immunization Status</Label>
-                    <Input
-                      id="immunization_status"
-                      value={formData.immunization_status}
-                      onChange={(e) => handleInputChange('immunization_status', e.target.value)}
-                      placeholder="e.g., All vaccinations up to date"
-                    />
-                  </div>
-
-                  <div className="space-y-2 mb-4">
-                    <DatePicker
-                      id="last_health_checkup_date"
-                      value={formData.last_health_checkup_date || ''}
-                      onChange={(value) => handleInputChange('last_health_checkup_date', value)}
-                      label="Last Health Checkup Date"
-                    />
-                  </div>
-
-                  <div className="space-y-2 mb-4">
-                    <Label htmlFor="doctor_notes">Doctor Notes</Label>
-                    <textarea
-                      id="doctor_notes"
-                      value={formData.doctor_notes}
-                      onChange={(e) => handleInputChange('doctor_notes', e.target.value)}
-                      placeholder="Add notes about this visit..."
-                      className="w-full min-h-[120px] px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-                    />
-                  </div>
-
-                  <div className="space-y-2 mb-4">
-                    <Label htmlFor="prescriptions">Prescriptions</Label>
-                    <textarea
-                      id="prescriptions"
-                      value={formData.prescriptions}
-                      onChange={(e) => handleInputChange('prescriptions', e.target.value)}
-                      placeholder="List prescribed medications and instructions..."
-                      className="w-full min-h-[120px] px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-                    />
-                  </div>
-
-                  <div className="space-y-2 mb-4">
-                    <DatePicker
-                      id="followup_date"
-                      value={formData.followup_date || ''}
-                      onChange={(value) => handleInputChange('followup_date', value)}
-                      label="Follow-up Date"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="followup_notes">Follow-up Notes</Label>
-                    <textarea
-                      id="followup_notes"
-                      value={formData.followup_notes}
-                      onChange={(e) => handleInputChange('followup_notes', e.target.value)}
-                      placeholder="Add follow-up instructions and next steps..."
-                      className="w-full min-h-[100px] px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-                    />
-                  </div>
-                </div>
+                </button>
               </div>
 
-              <DialogFooter>
+              {/* Tab Content - Scrollable */}
+              <div className="flex-1 overflow-y-auto px-1">
+                {/* Basic Info Tab */}
+                {activeTab === 'basic' && (
+                  <div className="space-y-4 pb-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="visit_date">Visit Date and Time</Label>
+                      <Input
+                        id="visit_date"
+                        type="datetime-local"
+                        value={formData.visit_date ? new Date(formData.visit_date).toISOString().slice(0, 16) : ''}
+                        onChange={(e) => handleInputChange('visit_date', e.target.value ? new Date(e.target.value).toISOString() : '')}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="treating_doctor_name">Treating Doctor Name</Label>
+                      <Input
+                        id="treating_doctor_name"
+                        value={formData.treating_doctor_name}
+                        onChange={(e) => handleInputChange('treating_doctor_name', e.target.value)}
+                        placeholder="e.g., Dr. Smith"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="height_cm">Height (cm)</Label>
+                        <Input
+                          id="height_cm"
+                          type="number"
+                          step="0.01"
+                          value={formData.height_cm || ''}
+                          onChange={(e) => handleInputChange('height_cm', e.target.value ? parseFloat(e.target.value) : null)}
+                          placeholder="e.g., 170.5"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="weight_kg">Weight (kg)</Label>
+                        <Input
+                          id="weight_kg"
+                          type="number"
+                          step="0.01"
+                          value={formData.weight_kg || ''}
+                          onChange={(e) => handleInputChange('weight_kg', e.target.value ? parseFloat(e.target.value) : null)}
+                          placeholder="e.g., 70.5"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <DatePicker
+                        id="last_health_checkup_date"
+                        value={formData.last_health_checkup_date || ''}
+                        onChange={(value) => handleInputChange('last_health_checkup_date', value)}
+                        label="Last Health Checkup Date"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Health & Medications Tab */}
+                {activeTab === 'health' && (
+                  <div className="space-y-4 pb-4">
+                    <div className="space-y-2">
+                      <Label>Chronic Conditions</Label>
+                      <div className="flex flex-wrap gap-2">
+                        {CHRONIC_CONDITIONS.map((condition) => (
+                          <label
+                            key={condition}
+                            className="flex items-center space-x-2 px-3 py-2 rounded-md border border-neutral-300 cursor-pointer hover:bg-neutral-50 transition-colors"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={formData.chronic_conditions?.includes(condition) || false}
+                              onChange={() => handleChronicConditionChange(condition)}
+                              className="rounded"
+                            />
+                            <span className="text-sm">{condition}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="known_allergies">
+                        <div className="flex items-center space-x-2">
+                          <AlertCircle className="w-4 h-4 text-red-600" />
+                          <span>Known Allergies</span>
+                        </div>
+                      </Label>
+                      <Input
+                        id="known_allergies"
+                        value={formData.known_allergies}
+                        onChange={(e) => handleInputChange('known_allergies', e.target.value)}
+                        placeholder="e.g., Penicillin, Peanuts"
+                        className="border-red-200 focus:border-red-400"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="current_medications">Current Medications</Label>
+                      <textarea
+                        id="current_medications"
+                        value={formData.current_medications}
+                        onChange={(e) => handleInputChange('current_medications', e.target.value)}
+                        placeholder="List current medications..."
+                        className="w-full min-h-[100px] px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="prescriptions">New Prescriptions</Label>
+                      <textarea
+                        id="prescriptions"
+                        value={formData.prescriptions}
+                        onChange={(e) => handleInputChange('prescriptions', e.target.value)}
+                        placeholder="List prescribed medications and instructions..."
+                        className="w-full min-h-[100px] px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="immunization_status">Immunization Status</Label>
+                      <Input
+                        id="immunization_status"
+                        value={formData.immunization_status}
+                        onChange={(e) => handleInputChange('immunization_status', e.target.value)}
+                        placeholder="e.g., All vaccinations up to date"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Notes & Follow-up Tab */}
+                {activeTab === 'notes' && (
+                  <div className="space-y-4 pb-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="doctor_notes">Doctor Notes</Label>
+                      <textarea
+                        id="doctor_notes"
+                        value={formData.doctor_notes}
+                        onChange={(e) => handleInputChange('doctor_notes', e.target.value)}
+                        placeholder="Add clinical observations and notes about this visit..."
+                        className="w-full min-h-[150px] px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      />
+                    </div>
+
+                    <div className="p-4 bg-orange-50 border border-orange-200 rounded-md space-y-4">
+                      <h4 className="flex items-center text-sm font-semibold text-orange-700">
+                        <CalendarClock className="w-4 h-4 mr-2" />
+                        Follow-up Information
+                      </h4>
+                      
+                      <div className="space-y-2">
+                        <DatePicker
+                          id="followup_date"
+                          value={formData.followup_date || ''}
+                          onChange={(value) => handleInputChange('followup_date', value)}
+                          label="Follow-up Date"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="followup_notes">Follow-up Instructions</Label>
+                        <textarea
+                          id="followup_notes"
+                          value={formData.followup_notes}
+                          onChange={(e) => handleInputChange('followup_notes', e.target.value)}
+                          placeholder="Add follow-up instructions and next steps..."
+                          className="w-full min-h-[100px] px-3 py-2 border border-orange-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <DialogFooter className="mt-4 pt-4 border-t">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => {
                     setShowAddVisitDialog(false)
+                    setActiveTab('basic')
                     resetForm()
                   }}
                   disabled={submitting}
@@ -673,7 +889,7 @@ export function PatientDetailPage({ patientId, onBack }: PatientDetailPageProps)
 
         {/* Edit Visit Dialog */}
         <Dialog open={showEditVisitDialog} onOpenChange={setShowEditVisitDialog}>
-          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
             <DialogHeader>
               <DialogTitle>Edit Visit</DialogTitle>
               <DialogDescription>
@@ -681,167 +897,237 @@ export function PatientDetailPage({ patientId, onBack }: PatientDetailPageProps)
               </DialogDescription>
             </DialogHeader>
 
-            <form onSubmit={handleUpdate}>
-              <div className="space-y-4 py-4">
-                <div className="mb-4">
-                  <Label className="text-sm text-neutral-600">Visit Date</Label>
-                  <p className="text-neutral-900 font-medium">
-                    {formData.visit_date && new Date(formData.visit_date).toLocaleString()}
-                  </p>
-                </div>
-
-                {/* Treating Doctor */}
-                <div className="space-y-2">
-                  <Label htmlFor="edit_treating_doctor_name">Treating Doctor Name</Label>
-                  <Input
-                    id="edit_treating_doctor_name"
-                    value={formData.treating_doctor_name}
-                    onChange={(e) => handleInputChange('treating_doctor_name', e.target.value)}
-                    placeholder="e.g., Dr. Smith"
-                  />
-                </div>
-
-                {/* Health Metrics Section - Same as Add Dialog */}
-                <div className="pt-4 border-t border-neutral-200">
-                  <h3 className="text-lg font-semibold mb-4">Health Information</h3>
-                  
-                  <div className="grid grid-cols-2 gap-4 mb-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="edit_height_cm">Height (cm)</Label>
-                      <Input
-                        id="edit_height_cm"
-                        type="number"
-                        step="0.01"
-                        value={formData.height_cm || ''}
-                        onChange={(e) => handleInputChange('height_cm', e.target.value ? parseFloat(e.target.value) : null)}
-                        placeholder="e.g., 170.5"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="edit_weight_kg">Weight (kg)</Label>
-                      <Input
-                        id="edit_weight_kg"
-                        type="number"
-                        step="0.01"
-                        value={formData.weight_kg || ''}
-                        onChange={(e) => handleInputChange('weight_kg', e.target.value ? parseFloat(e.target.value) : null)}
-                        placeholder="e.g., 70.5"
-                      />
-                    </div>
+            <form onSubmit={handleUpdate} className="flex flex-col flex-1 overflow-hidden">
+              {/* Tabs */}
+              <div className="flex border-b border-neutral-200 mb-4">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('basic')}
+                  className={`px-4 py-2 text-sm font-medium transition-colors ${
+                    activeTab === 'basic'
+                      ? 'border-b-2 border-primary-600 text-primary-600'
+                      : 'text-neutral-600 hover:text-neutral-900'
+                  }`}
+                >
+                  <div className="flex items-center space-x-2">
+                    <Calendar className="w-4 h-4" />
+                    <span>Basic Info</span>
                   </div>
-
-                  <div className="space-y-2 mb-4">
-                    <Label>Chronic Conditions</Label>
-                    <div className="flex flex-wrap gap-2">
-                      {CHRONIC_CONDITIONS.map((condition) => (
-                        <label
-                          key={condition}
-                          className="flex items-center space-x-2 px-3 py-2 rounded-md border border-neutral-300 cursor-pointer hover:bg-neutral-50"
-                        >
-                          <input
-                            type="checkbox"
-                            checked={formData.chronic_conditions?.includes(condition) || false}
-                            onChange={() => handleChronicConditionChange(condition)}
-                            className="rounded"
-                          />
-                          <span className="text-sm">{condition}</span>
-                        </label>
-                      ))}
-                    </div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('health')}
+                  className={`px-4 py-2 text-sm font-medium transition-colors ${
+                    activeTab === 'health'
+                      ? 'border-b-2 border-primary-600 text-primary-600'
+                      : 'text-neutral-600 hover:text-neutral-900'
+                  }`}
+                >
+                  <div className="flex items-center space-x-2">
+                    <Activity className="w-4 h-4" />
+                    <span>Health & Medications</span>
                   </div>
-
-                  <div className="space-y-2 mb-4">
-                    <Label htmlFor="edit_known_allergies">Known Allergies</Label>
-                    <Input
-                      id="edit_known_allergies"
-                      value={formData.known_allergies}
-                      onChange={(e) => handleInputChange('known_allergies', e.target.value)}
-                      placeholder="e.g., Penicillin, Peanuts"
-                    />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('notes')}
+                  className={`px-4 py-2 text-sm font-medium transition-colors ${
+                    activeTab === 'notes'
+                      ? 'border-b-2 border-primary-600 text-primary-600'
+                      : 'text-neutral-600 hover:text-neutral-900'
+                  }`}
+                >
+                  <div className="flex items-center space-x-2">
+                    <FileText className="w-4 h-4" />
+                    <span>Notes & Follow-up</span>
                   </div>
-
-                  <div className="space-y-2 mb-4">
-                    <Label htmlFor="edit_current_medications">Current Medications</Label>
-                    <textarea
-                      id="edit_current_medications"
-                      value={formData.current_medications}
-                      onChange={(e) => handleInputChange('current_medications', e.target.value)}
-                      placeholder="List current medications..."
-                      className="w-full min-h-[80px] px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-                    />
-                  </div>
-
-                  <div className="space-y-2 mb-4">
-                    <Label htmlFor="edit_immunization_status">Immunization Status</Label>
-                    <Input
-                      id="edit_immunization_status"
-                      value={formData.immunization_status}
-                      onChange={(e) => handleInputChange('immunization_status', e.target.value)}
-                      placeholder="e.g., All vaccinations up to date"
-                    />
-                  </div>
-
-                  <div className="space-y-2 mb-4">
-                    <DatePicker
-                      id="edit_last_health_checkup_date"
-                      value={formData.last_health_checkup_date || ''}
-                      onChange={(value) => handleInputChange('last_health_checkup_date', value)}
-                      label="Last Health Checkup Date"
-                    />
-                  </div>
-
-                  <div className="space-y-2 mb-4">
-                    <Label htmlFor="edit_doctor_notes">Doctor Notes</Label>
-                    <textarea
-                      id="edit_doctor_notes"
-                      value={formData.doctor_notes}
-                      onChange={(e) => handleInputChange('doctor_notes', e.target.value)}
-                      placeholder="Add notes about this visit..."
-                      className="w-full min-h-[120px] px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-                    />
-                  </div>
-
-                  <div className="space-y-2 mb-4">
-                    <Label htmlFor="edit_prescriptions">Prescriptions</Label>
-                    <textarea
-                      id="edit_prescriptions"
-                      value={formData.prescriptions}
-                      onChange={(e) => handleInputChange('prescriptions', e.target.value)}
-                      placeholder="List prescribed medications and instructions..."
-                      className="w-full min-h-[120px] px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-                    />
-                  </div>
-
-                  <div className="space-y-2 mb-4">
-                    <DatePicker
-                      id="edit_followup_date"
-                      value={formData.followup_date || ''}
-                      onChange={(value) => handleInputChange('followup_date', value)}
-                      label="Follow-up Date"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="edit_followup_notes">Follow-up Notes</Label>
-                    <textarea
-                      id="edit_followup_notes"
-                      value={formData.followup_notes}
-                      onChange={(e) => handleInputChange('followup_notes', e.target.value)}
-                      placeholder="Add follow-up instructions and next steps..."
-                      className="w-full min-h-[100px] px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-                    />
-                  </div>
-                </div>
+                </button>
               </div>
 
-              <DialogFooter>
+              {/* Tab Content - Scrollable */}
+              <div className="flex-1 overflow-y-auto px-1">
+                {/* Basic Info Tab */}
+                {activeTab === 'basic' && (
+                  <div className="space-y-4 pb-4">
+                    <div className="p-3 bg-neutral-100 rounded-md">
+                      <Label className="text-xs text-neutral-600">Visit Date</Label>
+                      <p className="text-neutral-900 font-medium">
+                        {formData.visit_date && new Date(formData.visit_date).toLocaleString()}
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="edit_treating_doctor_name">Treating Doctor Name</Label>
+                      <Input
+                        id="edit_treating_doctor_name"
+                        value={formData.treating_doctor_name}
+                        onChange={(e) => handleInputChange('treating_doctor_name', e.target.value)}
+                        placeholder="e.g., Dr. Smith"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="edit_height_cm">Height (cm)</Label>
+                        <Input
+                          id="edit_height_cm"
+                          type="number"
+                          step="0.01"
+                          value={formData.height_cm || ''}
+                          onChange={(e) => handleInputChange('height_cm', e.target.value ? parseFloat(e.target.value) : null)}
+                          placeholder="e.g., 170.5"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="edit_weight_kg">Weight (kg)</Label>
+                        <Input
+                          id="edit_weight_kg"
+                          type="number"
+                          step="0.01"
+                          value={formData.weight_kg || ''}
+                          onChange={(e) => handleInputChange('weight_kg', e.target.value ? parseFloat(e.target.value) : null)}
+                          placeholder="e.g., 70.5"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <DatePicker
+                        id="edit_last_health_checkup_date"
+                        value={formData.last_health_checkup_date || ''}
+                        onChange={(value) => handleInputChange('last_health_checkup_date', value)}
+                        label="Last Health Checkup Date"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Health & Medications Tab */}
+                {activeTab === 'health' && (
+                  <div className="space-y-4 pb-4">
+                    <div className="space-y-2">
+                      <Label>Chronic Conditions</Label>
+                      <div className="flex flex-wrap gap-2">
+                        {CHRONIC_CONDITIONS.map((condition) => (
+                          <label
+                            key={condition}
+                            className="flex items-center space-x-2 px-3 py-2 rounded-md border border-neutral-300 cursor-pointer hover:bg-neutral-50 transition-colors"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={formData.chronic_conditions?.includes(condition) || false}
+                              onChange={() => handleChronicConditionChange(condition)}
+                              className="rounded"
+                            />
+                            <span className="text-sm">{condition}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="edit_known_allergies">
+                        <div className="flex items-center space-x-2">
+                          <AlertCircle className="w-4 h-4 text-red-600" />
+                          <span>Known Allergies</span>
+                        </div>
+                      </Label>
+                      <Input
+                        id="edit_known_allergies"
+                        value={formData.known_allergies}
+                        onChange={(e) => handleInputChange('known_allergies', e.target.value)}
+                        placeholder="e.g., Penicillin, Peanuts"
+                        className="border-red-200 focus:border-red-400"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="edit_current_medications">Current Medications</Label>
+                      <textarea
+                        id="edit_current_medications"
+                        value={formData.current_medications}
+                        onChange={(e) => handleInputChange('current_medications', e.target.value)}
+                        placeholder="List current medications..."
+                        className="w-full min-h-[100px] px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="edit_prescriptions">New Prescriptions</Label>
+                      <textarea
+                        id="edit_prescriptions"
+                        value={formData.prescriptions}
+                        onChange={(e) => handleInputChange('prescriptions', e.target.value)}
+                        placeholder="List prescribed medications and instructions..."
+                        className="w-full min-h-[100px] px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="edit_immunization_status">Immunization Status</Label>
+                      <Input
+                        id="edit_immunization_status"
+                        value={formData.immunization_status}
+                        onChange={(e) => handleInputChange('immunization_status', e.target.value)}
+                        placeholder="e.g., All vaccinations up to date"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Notes & Follow-up Tab */}
+                {activeTab === 'notes' && (
+                  <div className="space-y-4 pb-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="edit_doctor_notes">Doctor Notes</Label>
+                      <textarea
+                        id="edit_doctor_notes"
+                        value={formData.doctor_notes}
+                        onChange={(e) => handleInputChange('doctor_notes', e.target.value)}
+                        placeholder="Add clinical observations and notes about this visit..."
+                        className="w-full min-h-[150px] px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      />
+                    </div>
+
+                    <div className="p-4 bg-orange-50 border border-orange-200 rounded-md space-y-4">
+                      <h4 className="flex items-center text-sm font-semibold text-orange-700">
+                        <CalendarClock className="w-4 h-4 mr-2" />
+                        Follow-up Information
+                      </h4>
+                      
+                      <div className="space-y-2">
+                        <DatePicker
+                          id="edit_followup_date"
+                          value={formData.followup_date || ''}
+                          onChange={(value) => handleInputChange('followup_date', value)}
+                          label="Follow-up Date"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="edit_followup_notes">Follow-up Instructions</Label>
+                        <textarea
+                          id="edit_followup_notes"
+                          value={formData.followup_notes}
+                          onChange={(e) => handleInputChange('followup_notes', e.target.value)}
+                          placeholder="Add follow-up instructions and next steps..."
+                          className="w-full min-h-[100px] px-3 py-2 border border-orange-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <DialogFooter className="mt-4 pt-4 border-t">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => {
                     setShowEditVisitDialog(false)
                     setSelectedVisit(null)
+                    setActiveTab('basic')
                     resetForm()
                   }}
                   disabled={submitting}
