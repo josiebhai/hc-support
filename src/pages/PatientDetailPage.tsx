@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { DatePicker } from '@/components/ui/datepicker'
+import { Select } from '@/components/ui/select'
 import {
   Dialog,
   DialogContent,
@@ -26,14 +27,16 @@ import {
   AlertCircle,
   CalendarClock,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Trash2,
+  Printer
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { useToast } from '@/components/ui/toast'
 import type { Patient } from '@/types/patient'
-import type { PatientVisit, CreatePatientVisitData, ChronicCondition } from '@/types/patientVisit'
-import { CHRONIC_CONDITIONS } from '@/types/patientVisit'
+import type { PatientVisit, CreatePatientVisitData, ChronicCondition, Medicine } from '@/types/patientVisit'
+import { CHRONIC_CONDITIONS, MEDICINE_FREQUENCIES, MEAL_TIMINGS } from '@/types/patientVisit'
 import { rolePermissions } from '@/types/user'
 
 interface PatientDetailPageProps {
@@ -53,6 +56,8 @@ export function PatientDetailPage({ patientId, onBack }: PatientDetailPageProps)
   const [submitting, setSubmitting] = useState(false)
   const [activeTab, setActiveTab] = useState<'basic' | 'health' | 'notes'>('basic')
   const [expandedVisits, setExpandedVisits] = useState<Set<string>>(new Set())
+  const [showPrescriptionDialog, setShowPrescriptionDialog] = useState(false)
+  const [selectedPrescriptionVisit, setSelectedPrescriptionVisit] = useState<PatientVisit | null>(null)
   
   const [formData, setFormData] = useState<CreatePatientVisitData>({
     patient_id: patientId,
@@ -69,6 +74,7 @@ export function PatientDetailPage({ patientId, onBack }: PatientDetailPageProps)
     followup_date: null,
     followup_notes: '',
     prescriptions: '',
+    medicines: [],
   })
 
   const userPermissions = user?.role ? rolePermissions[user.role] : null
@@ -213,10 +219,11 @@ export function PatientDetailPage({ patientId, onBack }: PatientDetailPageProps)
       followup_date: null,
       followup_notes: '',
       prescriptions: '',
+      medicines: [],
     })
   }
 
-  const handleInputChange = (field: keyof CreatePatientVisitData, value: string | number | null | ChronicCondition[]) => {
+  const handleInputChange = (field: keyof CreatePatientVisitData, value: string | number | null | ChronicCondition[] | Medicine[]) => {
     setFormData(prev => ({ ...prev, [field]: value }))
   }
 
@@ -242,6 +249,47 @@ export function PatientDetailPage({ patientId, onBack }: PatientDetailPageProps)
     }
   }
 
+  const addMedicine = () => {
+    const newMedicine: Medicine = {
+      id: `temp-${Date.now()}`,
+      medicine_name: '',
+      dosage: '',
+      frequency: 'Twice daily',
+      duration: '',
+      meal_timing: 'After food',
+      notes: '',
+    }
+    setFormData(prev => ({
+      ...prev,
+      medicines: [...(prev.medicines || []), newMedicine]
+    }))
+  }
+
+  const removeMedicine = (id: string) => {
+    setFormData(prev => ({
+      ...prev,
+      medicines: (prev.medicines || []).filter(m => m.id !== id)
+    }))
+  }
+
+  const updateMedicine = (id: string, field: keyof Medicine, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      medicines: (prev.medicines || []).map(m =>
+        m.id === id ? { ...m, [field]: value } : m
+      )
+    }))
+  }
+
+  const viewPrescription = (visit: PatientVisit) => {
+    setSelectedPrescriptionVisit(visit)
+    setShowPrescriptionDialog(true)
+  }
+
+  const printPrescription = () => {
+    window.print()
+  }
+
   const openEditDialog = (visit: PatientVisit) => {
     setSelectedVisit(visit)
     setActiveTab('basic') // Reset to basic tab when opening edit dialog
@@ -260,6 +308,7 @@ export function PatientDetailPage({ patientId, onBack }: PatientDetailPageProps)
       followup_date: visit.followup_date,
       followup_notes: visit.followup_notes || '',
       prescriptions: visit.prescriptions || '',
+      medicines: visit.medicines || [],
     })
     setShowEditVisitDialog(true)
   }
@@ -419,7 +468,7 @@ export function PatientDetailPage({ patientId, onBack }: PatientDetailPageProps)
                 {visits.map((visit) => {
                   const isExpanded = expandedVisits.has(visit.id)
                   const hasHealthData = visit.height_cm || visit.weight_kg || visit.chronic_conditions?.length || visit.known_allergies
-                  const hasMedications = visit.current_medications || visit.prescriptions || visit.immunization_status
+                  const hasMedications = visit.current_medications || visit.prescriptions || visit.immunization_status || (visit.medicines && visit.medicines.length > 0)
                   const hasNotes = visit.doctor_notes || visit.followup_notes
                   
                   return (
@@ -580,8 +629,44 @@ export function PatientDetailPage({ patientId, onBack }: PatientDetailPageProps)
                               )}
                               {visit.prescriptions && (
                                 <div className="mb-3 p-3 bg-blue-50 rounded-md">
-                                  <span className="text-blue-700 font-medium text-xs">Prescriptions</span>
+                                  <span className="text-blue-700 font-medium text-xs">Prescriptions (Notes)</span>
                                   <p className="text-neutral-900 text-sm mt-1 whitespace-pre-wrap">{visit.prescriptions}</p>
+                                </div>
+                              )}
+                              {visit.medicines && visit.medicines.length > 0 && (
+                                <div className="mb-3">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <span className="text-blue-700 font-semibold text-sm">Prescribed Medicines</span>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => viewPrescription(visit)}
+                                      className="text-blue-600 hover:text-blue-700"
+                                    >
+                                      <Printer className="w-3 h-3 mr-1" />
+                                      View Prescription
+                                    </Button>
+                                  </div>
+                                  <div className="space-y-2">
+                                    {visit.medicines.map((medicine, index) => (
+                                      <div key={medicine.id || index} className="p-3 bg-blue-50 rounded-md border border-blue-200">
+                                        <div className="flex items-start justify-between">
+                                          <div className="flex-1">
+                                            <p className="font-semibold text-neutral-900">{index + 1}. {medicine.medicine_name}</p>
+                                            <div className="mt-1 text-xs text-neutral-600 space-y-1">
+                                              <p><span className="font-medium">Dosage:</span> {medicine.dosage}</p>
+                                              <p><span className="font-medium">Frequency:</span> {medicine.frequency}</p>
+                                              <p><span className="font-medium">Duration:</span> {medicine.duration}</p>
+                                              <p><span className="font-medium">Timing:</span> {medicine.meal_timing}</p>
+                                              {medicine.notes && (
+                                                <p><span className="font-medium">Notes:</span> {medicine.notes}</p>
+                                              )}
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
                                 </div>
                               )}
                               {visit.immunization_status && (
@@ -800,14 +885,128 @@ export function PatientDetailPage({ patientId, onBack }: PatientDetailPageProps)
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="prescriptions">New Prescriptions</Label>
+                      <Label htmlFor="prescriptions">Prescription Notes (Optional)</Label>
                       <textarea
                         id="prescriptions"
                         value={formData.prescriptions}
                         onChange={(e) => handleInputChange('prescriptions', e.target.value)}
-                        placeholder="List prescribed medications and instructions..."
-                        className="w-full min-h-[100px] px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        placeholder="Add any additional prescription notes or instructions..."
+                        className="w-full min-h-[80px] px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
                       />
+                    </div>
+
+                    {/* Medicines List */}
+                    <div className="space-y-3 p-4 bg-blue-50 rounded-md border border-blue-200">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-blue-900 font-semibold">Prescribed Medicines</Label>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={addMedicine}
+                          className="text-blue-600 hover:text-blue-700"
+                        >
+                          <Plus className="w-4 h-4 mr-1" />
+                          Add Medicine
+                        </Button>
+                      </div>
+                      
+                      {formData.medicines && formData.medicines.length > 0 ? (
+                        <div className="space-y-3">
+                          {formData.medicines.map((medicine, index) => (
+                            <div key={medicine.id} className="p-3 bg-white rounded-md border border-blue-200 space-y-2">
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="font-semibold text-sm text-blue-900">Medicine #{index + 1}</span>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => removeMedicine(medicine.id)}
+                                  className="text-red-600 hover:text-red-700 h-8 w-8 p-0"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
+                              
+                              <div className="grid grid-cols-2 gap-2">
+                                <div className="col-span-2">
+                                  <Label className="text-xs">Medicine Name *</Label>
+                                  <Input
+                                    value={medicine.medicine_name}
+                                    onChange={(e) => updateMedicine(medicine.id, 'medicine_name', e.target.value)}
+                                    placeholder="e.g., Paracetamol"
+                                    className="text-sm"
+                                  />
+                                </div>
+                                
+                                <div>
+                                  <Label className="text-xs">Dosage *</Label>
+                                  <Input
+                                    value={medicine.dosage}
+                                    onChange={(e) => updateMedicine(medicine.id, 'dosage', e.target.value)}
+                                    placeholder="e.g., 500mg"
+                                    className="text-sm"
+                                  />
+                                </div>
+                                
+                                <div>
+                                  <Label className="text-xs">Frequency *</Label>
+                                  <Select
+                                    value={medicine.frequency}
+                                    onChange={(e) => updateMedicine(medicine.id, 'frequency', e.target.value)}
+                                    className="text-sm"
+                                  >
+                                    {MEDICINE_FREQUENCIES.map((freq) => (
+                                      <option key={freq} value={freq}>
+                                        {freq}
+                                      </option>
+                                    ))}
+                                  </Select>
+                                </div>
+                                
+                                <div>
+                                  <Label className="text-xs">Duration *</Label>
+                                  <Input
+                                    value={medicine.duration}
+                                    onChange={(e) => updateMedicine(medicine.id, 'duration', e.target.value)}
+                                    placeholder="e.g., 5 days"
+                                    className="text-sm"
+                                  />
+                                </div>
+                                
+                                <div>
+                                  <Label className="text-xs">Meal Timing *</Label>
+                                  <Select
+                                    value={medicine.meal_timing}
+                                    onChange={(e) => updateMedicine(medicine.id, 'meal_timing', e.target.value)}
+                                    className="text-sm"
+                                  >
+                                    {MEAL_TIMINGS.map((timing) => (
+                                      <option key={timing} value={timing}>
+                                        {timing}
+                                      </option>
+                                    ))}
+                                  </Select>
+                                </div>
+                                
+                                <div className="col-span-2">
+                                  <Label className="text-xs">Special Instructions (Optional)</Label>
+                                  <Input
+                                    value={medicine.notes || ''}
+                                    onChange={(e) => updateMedicine(medicine.id, 'notes', e.target.value)}
+                                    placeholder="Any special instructions..."
+                                    className="text-sm"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-blue-700 text-center py-4">
+                          No medicines added. Click "Add Medicine" to start prescribing.
+                        </p>
+                      )}
                     </div>
 
                     <div className="space-y-2">
@@ -1059,9 +1258,123 @@ export function PatientDetailPage({ patientId, onBack }: PatientDetailPageProps)
                         id="edit_prescriptions"
                         value={formData.prescriptions}
                         onChange={(e) => handleInputChange('prescriptions', e.target.value)}
-                        placeholder="List prescribed medications and instructions..."
-                        className="w-full min-h-[100px] px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        placeholder="Add any additional prescription notes or instructions..."
+                        className="w-full min-h-[80px] px-3 py-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
                       />
+                    </div>
+
+                    {/* Medicines List */}
+                    <div className="space-y-3 p-4 bg-blue-50 rounded-md border border-blue-200">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-blue-900 font-semibold">Prescribed Medicines</Label>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={addMedicine}
+                          className="text-blue-600 hover:text-blue-700"
+                        >
+                          <Plus className="w-4 h-4 mr-1" />
+                          Add Medicine
+                        </Button>
+                      </div>
+                      
+                      {formData.medicines && formData.medicines.length > 0 ? (
+                        <div className="space-y-3">
+                          {formData.medicines.map((medicine, index) => (
+                            <div key={medicine.id} className="p-3 bg-white rounded-md border border-blue-200 space-y-2">
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="font-semibold text-sm text-blue-900">Medicine #{index + 1}</span>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => removeMedicine(medicine.id)}
+                                  className="text-red-600 hover:text-red-700 h-8 w-8 p-0"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
+                              
+                              <div className="grid grid-cols-2 gap-2">
+                                <div className="col-span-2">
+                                  <Label className="text-xs">Medicine Name *</Label>
+                                  <Input
+                                    value={medicine.medicine_name}
+                                    onChange={(e) => updateMedicine(medicine.id, 'medicine_name', e.target.value)}
+                                    placeholder="e.g., Paracetamol"
+                                    className="text-sm"
+                                  />
+                                </div>
+                                
+                                <div>
+                                  <Label className="text-xs">Dosage *</Label>
+                                  <Input
+                                    value={medicine.dosage}
+                                    onChange={(e) => updateMedicine(medicine.id, 'dosage', e.target.value)}
+                                    placeholder="e.g., 500mg"
+                                    className="text-sm"
+                                  />
+                                </div>
+                                
+                                <div>
+                                  <Label className="text-xs">Frequency *</Label>
+                                  <Select
+                                    value={medicine.frequency}
+                                    onChange={(e) => updateMedicine(medicine.id, 'frequency', e.target.value)}
+                                    className="text-sm"
+                                  >
+                                    {MEDICINE_FREQUENCIES.map((freq) => (
+                                      <option key={freq} value={freq}>
+                                        {freq}
+                                      </option>
+                                    ))}
+                                  </Select>
+                                </div>
+                                
+                                <div>
+                                  <Label className="text-xs">Duration *</Label>
+                                  <Input
+                                    value={medicine.duration}
+                                    onChange={(e) => updateMedicine(medicine.id, 'duration', e.target.value)}
+                                    placeholder="e.g., 5 days"
+                                    className="text-sm"
+                                  />
+                                </div>
+                                
+                                <div>
+                                  <Label className="text-xs">Meal Timing *</Label>
+                                  <Select
+                                    value={medicine.meal_timing}
+                                    onChange={(e) => updateMedicine(medicine.id, 'meal_timing', e.target.value)}
+                                    className="text-sm"
+                                  >
+                                    {MEAL_TIMINGS.map((timing) => (
+                                      <option key={timing} value={timing}>
+                                        {timing}
+                                      </option>
+                                    ))}
+                                  </Select>
+                                </div>
+                                
+                                <div className="col-span-2">
+                                  <Label className="text-xs">Special Instructions (Optional)</Label>
+                                  <Input
+                                    value={medicine.notes || ''}
+                                    onChange={(e) => updateMedicine(medicine.id, 'notes', e.target.value)}
+                                    placeholder="Any special instructions..."
+                                    className="text-sm"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-blue-700 text-center py-4">
+                          No medicines added. Click "Add Medicine" to start prescribing.
+                        </p>
+                      )}
                     </div>
 
                     <div className="space-y-2">
@@ -1139,6 +1452,164 @@ export function PatientDetailPage({ patientId, onBack }: PatientDetailPageProps)
                 </Button>
               </DialogFooter>
             </form>
+          </DialogContent>
+        </Dialog>
+
+        {/* Prescription View Dialog */}
+        <Dialog open={showPrescriptionDialog} onOpenChange={setShowPrescriptionDialog}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto print:max-w-full print:shadow-none">
+            <DialogHeader className="print:hidden">
+              <DialogTitle>Prescription</DialogTitle>
+              <DialogDescription>
+                View and print the prescription for this visit
+              </DialogDescription>
+            </DialogHeader>
+
+            {selectedPrescriptionVisit && (
+              <div className="prescription-content space-y-6 py-4">
+                {/* Header - Print Only */}
+                <div className="hidden print:block text-center border-b-2 border-primary-600 pb-4 mb-6">
+                  <h1 className="text-2xl font-bold text-primary-700">HealthCare Support</h1>
+                  <p className="text-sm text-neutral-600">Patient Management System</p>
+                </div>
+
+                {/* Patient & Doctor Info */}
+                <div className="grid grid-cols-2 gap-6 p-4 bg-neutral-50 rounded-md print:bg-white print:border print:border-neutral-300">
+                  <div>
+                    <h3 className="font-semibold text-neutral-700 mb-2">Patient Information</h3>
+                    <p className="text-sm"><span className="font-medium">Name:</span> {patient?.full_name}</p>
+                    <p className="text-sm"><span className="font-medium">Patient ID:</span> {patient?.patient_id}</p>
+                    <p className="text-sm"><span className="font-medium">Age:</span> {calculateAge(patient?.date_of_birth || '')} years</p>
+                    {patient?.blood_group && (
+                      <p className="text-sm"><span className="font-medium">Blood Group:</span> {patient.blood_group}</p>
+                    )}
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-neutral-700 mb-2">Visit Information</h3>
+                    <p className="text-sm"><span className="font-medium">Date:</span> {new Date(selectedPrescriptionVisit.visit_date).toLocaleDateString()}</p>
+                    {selectedPrescriptionVisit.treating_doctor_name && (
+                      <p className="text-sm"><span className="font-medium">Doctor:</span> Dr. {selectedPrescriptionVisit.treating_doctor_name}</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Allergies Warning */}
+                {selectedPrescriptionVisit.known_allergies && (
+                  <div className="p-4 bg-red-50 border-2 border-red-500 rounded-md print:border-red-700">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <AlertCircle className="w-5 h-5 text-red-600" />
+                      <h3 className="font-bold text-red-700">ALLERGIES</h3>
+                    </div>
+                    <p className="text-sm text-red-900 font-medium">{selectedPrescriptionVisit.known_allergies}</p>
+                  </div>
+                )}
+
+                {/* Diagnosis/Notes */}
+                {selectedPrescriptionVisit.doctor_notes && (
+                  <div className="p-4 bg-blue-50 rounded-md print:bg-white print:border print:border-neutral-300">
+                    <h3 className="font-semibold text-neutral-700 mb-2">Diagnosis / Clinical Notes</h3>
+                    <p className="text-sm whitespace-pre-wrap">{selectedPrescriptionVisit.doctor_notes}</p>
+                  </div>
+                )}
+
+                {/* Prescription Table */}
+                {selectedPrescriptionVisit.medicines && selectedPrescriptionVisit.medicines.length > 0 && (
+                  <div>
+                    <h3 className="font-bold text-lg text-primary-700 mb-3 flex items-center">
+                      <Pill className="w-5 h-5 mr-2" />
+                      Rx - Prescription
+                    </h3>
+                    <table className="w-full border-collapse border border-neutral-300">
+                      <thead>
+                        <tr className="bg-primary-50 print:bg-neutral-100">
+                          <th className="border border-neutral-300 p-2 text-left text-sm font-semibold">#</th>
+                          <th className="border border-neutral-300 p-2 text-left text-sm font-semibold">Medicine</th>
+                          <th className="border border-neutral-300 p-2 text-left text-sm font-semibold">Dosage</th>
+                          <th className="border border-neutral-300 p-2 text-left text-sm font-semibold">Frequency</th>
+                          <th className="border border-neutral-300 p-2 text-left text-sm font-semibold">Duration</th>
+                          <th className="border border-neutral-300 p-2 text-left text-sm font-semibold">Timing</th>
+                          <th className="border border-neutral-300 p-2 text-left text-sm font-semibold">Instructions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {selectedPrescriptionVisit.medicines.map((medicine, index) => (
+                          <tr key={medicine.id || index} className="hover:bg-neutral-50">
+                            <td className="border border-neutral-300 p-2 text-sm">{index + 1}</td>
+                            <td className="border border-neutral-300 p-2 text-sm font-medium">{medicine.medicine_name}</td>
+                            <td className="border border-neutral-300 p-2 text-sm">{medicine.dosage}</td>
+                            <td className="border border-neutral-300 p-2 text-sm">{medicine.frequency}</td>
+                            <td className="border border-neutral-300 p-2 text-sm">{medicine.duration}</td>
+                            <td className="border border-neutral-300 p-2 text-sm">{medicine.meal_timing}</td>
+                            <td className="border border-neutral-300 p-2 text-sm">{medicine.notes || '-'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {/* Additional Prescription Notes */}
+                {selectedPrescriptionVisit.prescriptions && (
+                  <div className="p-4 bg-neutral-50 rounded-md print:bg-white print:border print:border-neutral-300">
+                    <h3 className="font-semibold text-neutral-700 mb-2">Additional Instructions</h3>
+                    <p className="text-sm whitespace-pre-wrap">{selectedPrescriptionVisit.prescriptions}</p>
+                  </div>
+                )}
+
+                {/* Follow-up Information */}
+                {(selectedPrescriptionVisit.followup_date || selectedPrescriptionVisit.followup_notes) && (
+                  <div className="p-4 bg-orange-50 border border-orange-200 rounded-md print:bg-white print:border-orange-500">
+                    <h3 className="font-semibold text-orange-700 mb-2 flex items-center">
+                      <CalendarClock className="w-4 h-4 mr-2" />
+                      Follow-up
+                    </h3>
+                    {selectedPrescriptionVisit.followup_date && (
+                      <p className="text-sm mb-1">
+                        <span className="font-medium">Next Visit:</span> {new Date(selectedPrescriptionVisit.followup_date).toLocaleDateString()}
+                      </p>
+                    )}
+                    {selectedPrescriptionVisit.followup_notes && (
+                      <p className="text-sm whitespace-pre-wrap">{selectedPrescriptionVisit.followup_notes}</p>
+                    )}
+                  </div>
+                )}
+
+                {/* Footer - Print Only */}
+                <div className="hidden print:block mt-8 pt-4 border-t border-neutral-300">
+                  <div className="flex justify-between items-end">
+                    <div>
+                      <p className="text-xs text-neutral-600">Prescribed by:</p>
+                      <p className="text-sm font-semibold mt-2">
+                        {selectedPrescriptionVisit.treating_doctor_name ? `Dr. ${selectedPrescriptionVisit.treating_doctor_name}` : '_________________'}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-neutral-600">Date:</p>
+                      <p className="text-sm font-semibold mt-2">
+                        {new Date(selectedPrescriptionVisit.visit_date).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <DialogFooter className="print:hidden">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowPrescriptionDialog(false)}
+              >
+                Close
+              </Button>
+              <Button
+                type="button"
+                onClick={printPrescription}
+              >
+                <Printer className="w-4 h-4 mr-2" />
+                Print Prescription
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>

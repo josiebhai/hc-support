@@ -20,7 +20,8 @@ CREATE TABLE IF NOT EXISTS patient_visits (
     -- Follow-up and Prescriptions (optional)
     followup_date DATE, -- Date for follow-up appointment
     followup_notes TEXT, -- Follow-up instructions and notes
-    prescriptions TEXT, -- Prescribed medications and instructions
+    prescriptions TEXT, -- Prescribed medications and instructions (free text)
+    medicines JSONB, -- Structured list of prescribed medicines with details
     
     -- Metadata
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
